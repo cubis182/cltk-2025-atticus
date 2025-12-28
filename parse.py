@@ -162,6 +162,8 @@ def clean_text(page):
             print(f"The line to be deleted is: {line}")
             del stichic_text[n_line]
             break
+    
+    # TODO Remove the letter heading ('CICERO ATTICO SAL.')
 
     ##############EVERY FUNCTION AFTER THIS OPERATES ON THE WHOLE STRING############
     ##############MAKE SURE TO USE THE text VAR, NOT THE stichic_text var############
@@ -176,6 +178,13 @@ def clean_text(page):
 
     #Remove gaps between words bigger than a space
     text = re.sub('[\n ]+', ' ', text)
+
+    # TODO Remove pairs of parentheses where one of the two are 
+    #right next to a letter. In that case, it's usually an 
+    #emendation NOTE: I realize there might be an issue where
+    #the OCR doesn't correctly identify both parentheses, which
+    #could cause this type of algorithm to fail. Need to think about 
+    #this. This might be a step for manual correction
 
     #NOTE: I'm not removing punctuation, because I want the choice of
     #including or excluding it at the last stage.

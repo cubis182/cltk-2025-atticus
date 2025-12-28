@@ -18,6 +18,8 @@ import os
 os.chdir('C:/Users/T470s/Documents/GitHub/cltk-2025-atticus')
 from importlib import *
 import datetime
+import parse
+import pdfplumber
 
 
 
@@ -74,34 +76,13 @@ nlp = NLP('lat', backend='stanza')
 
 import cltk.morphosyntax.conll as conll
 
-text = open('./cic-att-8.11.txt', 'r', encoding='utf-8')
-doc = nlp.analyze(text=text.read())
+text_as_string = ''
+pdf = pdfplumber.open('./letters-pdf/ATT_BOOKS_1-8.pdf')
+for page in pdf.pages:
+    text_as_string += parse.clean_text(page)
 
-file = open('./text-cltk.txt', 'w', encoding='utf-8')
-#file.write(conll.doc_to_conllu(doc))
-#file.write(conll.words_to_conllu(doc.words))
-file.write(conll_convert(doc))
-file.close()
+parse.save_output(text_as_string)
 
-print(doc.words[0])
-doc.words[0].upos.tag
-
-#Testing an algorithm for printing the info to a file
-AttOutput = open(f'./att-parsing-{datetime.datetime(1,1,1).today().strftime("%d-%m-%y")}.txt', 'w', encoding='utf-8')
-i = 1
-for sent in doc.sentences:
-    AttOutput.write(f'Sentence {i}:\n')
-    i += 1
-    for w in sent.words:
-        #Get the features in a string
-        sFeats = ''
-        try:
-            for feat in w.features.features:
-                sFeats += f'{feat.key}({feat.value}), '
-        except AttributeError:
-            pass
-        AttOutput.write(f"{w.string}: postag(tag: {w.upos.tag}, name: {w.upos.name}), {sFeats}\n")
-AttOutput.close()
 
 
 
