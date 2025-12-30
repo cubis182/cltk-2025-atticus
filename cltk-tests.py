@@ -78,7 +78,7 @@ import cltk.morphosyntax.conll as conll
 
 text_as_string = ''
 pdf = pdfplumber.open('./letters-pdf/ATT_BOOKS_1-8.pdf')
-for page in pdf.pages:
+for page in pdf.pages[18:]:
     text_as_string += parse.clean_text(page)
 
 parse.save_output(text_as_string)

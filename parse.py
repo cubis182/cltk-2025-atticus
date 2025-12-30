@@ -22,6 +22,12 @@ re
 
 """
 
+"""
+TODO: Decide what to do on failure. How do I insert a page
+back into the stream with no page identifiers? Easiest would be to
+store each on a different line.
+"""
+
 import os
 import pdfplumber
 import re
@@ -91,6 +97,8 @@ def rand_letter() -> int:
     """
     return random.randint(0, len(pdfV1.pages))
 
+    
+
 def clean_text(page):
     """Takes a pdfplumber.Page and normalizes the text.
     The function removes headers, footers, and spaces. It joins words 
@@ -115,20 +123,13 @@ def clean_text(page):
         if line_is_blank:
             del stichic_text[n_line]
         else:
-            break
+            break    
 
-    #Remove the final lines in the document
     num_lines = len(stichic_text) - 1 #subtract one to make indexing easy
-
 
     # Get the block of text at the end of the page which has
     #at minimum 3 blank lines above it. <string>.isspace() will 
     #return True if it's a blank line
-    
-
-    #####Step 1: Go through each line backwards, find out what the index of
-    #the footer is
-
     index_footer = -1
     num_empty_lines = 0 #Needs to equal three before exiting the loop
     for n_line in range(num_lines, -1, -1):
@@ -142,8 +143,9 @@ def clean_text(page):
         if num_empty_lines == 3:
             index_footer = n_line
             break
+    
+    print(f"clean_text(): Debug message: index_footer is equal to {index_footer}")
 
-    ######Step 2: Remove every line in the list including the index_footer and after
     try:
         del stichic_text[index_footer:]
     except IndexError:
@@ -164,6 +166,8 @@ def clean_text(page):
             break
     
     # TODO Remove the letter heading ('CICERO ATTICO SAL.')
+
+    # TODO Remove Liber Primus, Secundus, etc.
 
     ##############EVERY FUNCTION AFTER THIS OPERATES ON THE WHOLE STRING############
     ##############MAKE SURE TO USE THE text VAR, NOT THE stichic_text var############
@@ -189,14 +193,17 @@ def clean_text(page):
     #NOTE: I'm not removing punctuation, because I want the choice of
     #including or excluding it at the last stage.
 
-    return text
+    #NOTE TODO adding a line end after the page to make each one
+    #fit on a new line, I'm not committed to doing this permanently, 
+    #though
+    return text + '\n'
 
 #with pdfplumber.open(dir + Vol1) as pdf, open("volume1_books1-8.txt", "w", encoding="utf-8") as f:
     #for page in pdf.pages:
         #print(clean_text(page))
 
 # TODO THESE ARE LINES OF CODE FOR DEBUGGING I NEED TO CLEAN UP
-#page = pdfV1.pages[rand_letter()]
+#page = pdfV1.pages[143]
 #print(page.extract_text(layout=True, y_density=Y_DENSITY))
 #print(clean_text(page))
 #save_output(clean_text(page))
