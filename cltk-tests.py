@@ -81,6 +81,12 @@ pdf = pdfplumber.open('./letters-pdf/ATT_BOOKS_1-8.pdf')
 for page in pdf.pages[18:]:
     text_as_string += parse.clean_text(page)
 
+
+"""
+TODO URGENT: See how many pages return empty in the loop
+just above
+"""
+
 parse.save_output(text_as_string)
 
 
