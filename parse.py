@@ -6,7 +6,11 @@ Date: 12/21/2025
 Version: 1.0
 Description: 
     This script accepts a PDF of Shackleton Bailey's Teubner editions of 
-    M. Ciceronis Epistulae ad Atticum
+    M. Ciceronis Epistulae ad Atticum. The clean_text() function returns
+    a string with the text cleaned to remove header information. 
+
+    Each page ends with a double line-break for identifying  page breaks
+    later.
 
     Sources:
 
@@ -196,7 +200,7 @@ def clean_text(page):
     #NOTE TODO adding a line end after the page to make each one
     #fit on a new line, I'm not committed to doing this permanently, 
     #though
-    return text + '\n'
+    return text + '\n\n'
 
 #with pdfplumber.open(dir + Vol1) as pdf, open("volume1_books1-8.txt", "w", encoding="utf-8") as f:
     #for page in pdf.pages:
