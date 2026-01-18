@@ -16,7 +16,7 @@
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="page" minOccurs="0"/>
-                                        <xs:any></xs:any>
+                                        <xs:any minOccurs="0"></xs:any>
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
@@ -25,15 +25,26 @@
                                     <xs:sequence>
                                         <xs:any></xs:any>
                                     </xs:sequence>
-                                    <xs:attribute name="reviewed" />
+                                    <xs:attribute ref="reviewed" />
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
-                        <xs:attribute name="reviewed" />
+                        <xs:attribute ref="reviewed" />
                     </xs:complexType>
                 </xs:element>
             </xs:sequence>
+            <xs:anyAttribute/>
         </xs:complexType>
     </xs:element>
+
+    <xs:attribute name="reviewed">
+        <xs:simpleType>
+            <xs:restriction base="xs:string">
+                <xs:enumeration value="TRUE"/>
+                <xs:enumeration value="FALSE"/>
+                <xs:enumeration value="UNREVIEWED"/>
+            </xs:restriction>
+        </xs:simpleType>
+    </xs:attribute>
 
 </xs:schema>

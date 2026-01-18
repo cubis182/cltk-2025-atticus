@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """
+NOTE: NOW DEPRECATED. ALL NEW CHANGES ARE IN POSTAG_PERSEUSDL.PY
 Filename: parse.py
 Author: Matthew DeHass
 Date: 12/21/2025
@@ -136,7 +137,7 @@ def clean_text(page):
     text = page.extract_text(layout=True, y_density=Y_DENSITY)
 
     # Create a version of the text which is split into lines
-    # This variable is
+    #
     stichic_text = text.splitlines()
 
     num_lines = len(stichic_text) - 1  # subtract one to make indexing easy

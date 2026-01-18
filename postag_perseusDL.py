@@ -1,5 +1,3 @@
-
-
 # -*- coding: utf-8 -*-
 """
 Filename: parse.py
@@ -238,6 +236,7 @@ def remove_invalid_characters(text: str) -> str:
 
     return text + "\n\n"
 
+
 # TODO THESE ARE LINES OF CODE FOR DEBUGGING I NEED TO CLEAN UP
 # page = pdfV1.pages[143]
 # print(page.extract_text(layout=True, y_density=Y_DENSITY))
@@ -288,25 +287,34 @@ import re
 import os
 import sys
 
-dir_path = Path(os.path.realpath(__file__))
-dir_path = dir_path / "../"
+dir_path = Path(__file__)
+dir_path = dir_path.parents[0]
 sys.path.append(dir_path)
+os.chdir(dir_path)
 
 s_xml_template = """
-<root xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="results-schema.xsd">
+<root xmlns:xsi="http://www.w3.org/2001/XMLSchema">
     <work>
-        <page>
-            <plaintext/>
-            <postagged/>
-        </page>
+        <title/>
+        <author/>
+        <plaintext/>
+        <postagged reviewed=/>
     </work>
 </root>
 """
 
-#Retrieve the schema that sets the format for the data we'll parse
-data_schema = etree.XMLSchema(file="./results-schema.xsd")
+# Retrieve the schema that sets the format for the data we'll parse
+data_schema = etree.XMLSchema(file="results-schema.xsd")
 
 
+parser_xml_template = etree.XMLParser(schema=data_schema)
+
+try:
+    xml_template = etree.fromstring(s_xml_template, parser=parser_xml_template)
+except etree.XMLSyntaxError as invalid_error:
+    print(
+        f"Error! The default XML format doesn't match the schema. Details:\n {invalid_error.args}."
+    )
 
 
 inval_tags = [
@@ -506,5 +514,3 @@ if __name__ == "__main__":
     print(Path(__file__).parents[0])
     # Debug
     print(f"Printing the xml template:\n{xml_template}")
-
-    print(f"Debug: validating the XML. Results: {}")

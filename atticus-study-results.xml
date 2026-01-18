@@ -1,5 +1,5 @@
 <!-- -->
-<root xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="results-schema.xsd">
+<root xmlns:xsi="https://www.w3.org/2001/XMLSchema" xsi:schemaLocation="results-schema.xsd">
     <work>
         <page>
             <plaintext/>
