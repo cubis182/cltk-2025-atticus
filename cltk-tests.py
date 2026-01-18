@@ -1,4 +1,3 @@
-
 """
 Made for Python 3.13.7
 
@@ -13,14 +12,16 @@ Made for Python 3.13.7
 from cltk.nlp import NLP
 import cltk.core.data_types as types
 import cltk.morphosyntax.conll as conll
+from postag_perseusDL import *
+from pathlib import Path
 
 import os
-os.chdir('C:/Users/T470s/Documents/GitHub/cltk-2025-atticus')
+
+os.chdir(Path(__file__).parents[0])
 from importlib import *
 import datetime
-import parse
+from postag_perseusDL import *
 import pdfplumber
-
 
 
 def conll_convert(doc: types.Doc) -> str:
@@ -28,72 +29,71 @@ def conll_convert(doc: types.Doc) -> str:
     conll_convert(doc: cltk.Doc)
 
     This function deals with an issue where
-    the root of Conllu sentences in the 
-    doc_to_conllu function is given as N/A 
+    the root of Conllu sentences in the
+    doc_to_conllu function is given as N/A
     (the character '_') and not 0. The function
     loops between each line and replaces a '_'
     in the 7th position
     """
 
-    returnStr = ''
-    
+    returnStr = ""
+
     for sent in doc.sentences:
         stringVal = conll.words_to_conllu(sent.words)
-        
-        #Go line-by-line into the Conll and replace _ in the root position with 0
 
-        finalStr = '\n'
-        for line in stringVal.split('\n'):
-            splitLine = line.split('\t')
+        # Go line-by-line into the Conll and replace _ in the root position with 0
+
+        finalStr = "\n"
+        for line in stringVal.split("\n"):
+            splitLine = line.split("\t")
             try:
                 gov = splitLine[6]
 
-                if splitLine[6] == '_':
-                    splitLine[6] = '0'
-                    line = '\t'.join(splitLine)
+                if splitLine[6] == "_":
+                    splitLine[6] = "0"
+                    line = "\t".join(splitLine)
             except IndexError:
                 pass
-            
-            #If it's the start of a new sentence, add a gap
-            #try:
+
+            # If it's the start of a new sentence, add a gap
+            # try:
 
             #    if line[0:2] == '1\t':
             #        line = '\n' + line
-            #except IndexError:
+            # except IndexError:
             #    pass
 
-            finalStr += line + '\n'
+            finalStr += line + "\n"
 
         returnStr += finalStr
-    
+
     return returnStr
 
 
+# nlp = NLP("lat", backend="stanza")
 
-nlp = NLP('lat', backend='stanza')
-
-#doc = nlp.analyze(text='ego sum magister linguae latinae.')
+# doc = nlp.analyze(text='ego sum magister linguae latinae.')
 
 import cltk.morphosyntax.conll as conll
+import sys
 
-text_as_string = ''
-pdf = pdfplumber.open('./letters-pdf/ATT_BOOKS_1-8.pdf')
+sys.path.append("C:/Users/T470s/Documents/GitHub/cltk-2025-atticus")
+import postag_perseusDL
+
+"""
+text_as_string = ""
+pdf = pdfplumber.open("./letters-pdf/ATT_BOOKS_1-8.pdf")
 for page in pdf.pages[18:]:
     text_as_string += parse.clean_text(page)
 
-
+"""
 """
 TODO URGENT: See how many pages return empty in the loop
 just above
 """
 
-parse.save_output(text_as_string)
-
-
-
-
-
-
+# parse.save_output(text_as_string)
+print(type(TEI_to_text(pathArg="rand")))
 
 """
 Some pathlib experiments

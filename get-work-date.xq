@@ -43,8 +43,10 @@ declare function local:retrieve-atom($urn as xs:string)
   return fn:doc($api-call)
 };
 
-let $authors :=
+(:let $rand := random:integer(fn:count($lat) - 1) + 1
+return $lat[$rand]/fn:base-uri(.):)
+
 for $doc in $lat
-return $doc//tei:biblStruct//tei:author/text()
-return fn:distinct-values($authors)
+let $title := $doc/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:
+return $title/text()
 

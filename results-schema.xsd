@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="root">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="work">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <!-- Get the title from
+                            tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title-->
+                            <xs:element name="title" type="xs:string" minOccurs="1"></xs:element>
+                            <!-- Get the title from
+                            tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author-->
+                            <xs:element name="author" type="xs:string" minOccurs="1"></xs:element>
+                            <xs:element name="plaintext" minOccurs="1">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="page" minOccurs="0"/>
+                                        <xs:any></xs:any>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="postagged" minOccurs="1">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:any></xs:any>
+                                    </xs:sequence>
+                                    <xs:attribute name="reviewed" />
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="reviewed" />
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>
