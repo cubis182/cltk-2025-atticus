@@ -17,7 +17,9 @@ from pathlib import Path
 
 import os
 
+# Change the current directory to this file (useful for working in an IDE)
 os.chdir(Path(__file__).parents[0])
+
 from importlib import *
 import datetime
 from postag_perseusDL import *

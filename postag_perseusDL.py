@@ -297,20 +297,26 @@ s_xml_template = """
     <work>
         <title/>
         <author/>
-        <plaintext/>
-        <postagged reviewed=/>
+        <plaintext>
+            <page/>
+        </plaintext>
+        <postagged reviewed="UNREVIEWED"/>
     </work>
 </root>
 """
 
 # Retrieve the schema that sets the format for the data we'll parse
-data_schema = etree.XMLSchema(file="results-schema.xsd")
+data_schema: etree.XMLSchema = etree.XMLSchema(file="results-schema.xsd")
+# data_schema: etree.XMLSchema = etree.XMLSchema(file="C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/results-schema.xsd")
 
-
+# NOTE: this template is NEVER to be modified directly. Assign it to a
+# new variable each time.
 parser_xml_template = etree.XMLParser(schema=data_schema)
 
 try:
-    xml_template = etree.fromstring(s_xml_template, parser=parser_xml_template)
+    xml_template: etree._Element = etree.fromstring(
+        s_xml_template, parser=parser_xml_template
+    )
 except etree.XMLSyntaxError as invalid_error:
     print(
         f"Error! The default XML format doesn't match the schema. Details:\n {invalid_error.args}."
@@ -490,16 +496,64 @@ def TEI_to_text(pathArg="", index=-1):
         return worksProcessed
 
 
-def create_page(page_text: str, title: str, author: str) -> etree._Element:
+###############################################33
+def ResultsFailureError(Exception):
+    """If one of the following five functions fails to execute, it
+    will raise this error to signal that the work information
+    didn't successfully get added to the results XML."""
+
+    def __init__(self, msg):
+        pass
+
+
+def validate_result(element: etree._Element) -> bool:
+    """
+    This is used in one of the following functions (create_work, create_plaintext, create_postagged, create_page)
+    in order to make sure the result is schema compliant"""
+    # Create this so we can validate our results against the schema
+    from copy import deepcopy
+
+    local_template = xml_template
+
+    matching_desc = [
+        x for x in local_template.iterdescendants() if x.tag == element.tag
+    ]
+    matching_desc = matching_desc[0]
+
+    matching_desc.getparent().replace(
+        old_element=matching_desc,
+        new_element=element,
+    )
+
+    # raise an unhandled exception if it doesn't validate
+    print(etree.tostring(local_template, pretty_print=True))
+    return data_schema.validate(local_template)
+
+
+def create_work(plaintext: str, title: str, author: str) -> etree._Element:
     """This function returns a set of elements in the format defined in
     results-schema.xsd in this repository. It takes the cleaned text for
-    a file, which is generated in the TEI_to_text function"""
+    a file, which is generated in the TEI_to_text function
+
+
+    @param plaintext:
+    @param title
+    @param author"""
 
     E.work(
         E.title(),
         E.author(),
         E.plaintext(string, reviewed="notreviewed"),
     )
+
+
+def add_plaintext(plaintext: str, xml: etree._Element) -> etree._Element:
+    """
+    Add plain text to an already existing work. The work must"""
+    pass
+
+
+#########################################################3
 
 
 # QUESTIONS TO ANSWER:
@@ -511,6 +565,12 @@ def create_page(page_text: str, title: str, author: str) -> etree._Element:
 #   TEI XML would be
 
 if __name__ == "__main__":
-    print(Path(__file__).parents[0])
+    # print(f"Current file path: {Path(__file__).parents[0]}\n")
     # Debug
-    print(f"Printing the xml template:\n{xml_template}")
+    # print(f"Printing the xml template:\n{prettyprint(xml_template)}")
+
+    xml_test = etree.fromstring("<plaintext>stuff</plaintext>")
+
+    """YOU WERE TESTING THE VALIDATION!!!!!!!"""
+
+    print(validate_result(xml_test))

@@ -3,7 +3,7 @@
     <xs:element name="root">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="work">
+                <xs:element name="work" maxOccurs="unbounded">
                     <xs:complexType>
                         <xs:sequence>
                             <!-- Get the title from
@@ -23,7 +23,7 @@
                             <xs:element name="postagged" minOccurs="1">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:any></xs:any>
+                                        <xs:any minOccurs="0"></xs:any>
                                     </xs:sequence>
                                     <xs:attribute ref="reviewed" />
                                 </xs:complexType>
