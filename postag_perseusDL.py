@@ -294,13 +294,11 @@ os.chdir(dir_path)
 
 s_xml_template = """
 <root xmlns:xsi="http://www.w3.org/2001/XMLSchema">
-    <work>
+    <work reviewed="UNREVIEWED">
         <title/>
         <author/>
-        <plaintext>
-            <page/>
-        </plaintext>
-        <postagged reviewed="UNREVIEWED"/>
+        <content type="plaintext"/>
+        <content type="postagged"/>
     </work>
 </root>
 """
@@ -502,8 +500,6 @@ def ResultsFailureError(Exception):
     will raise this error to signal that the work information
     didn't successfully get added to the results XML."""
 
-    def __init__(self, msg):
-        pass
 
 
 def validate_result(element: etree._Element) -> bool:
@@ -515,10 +511,25 @@ def validate_result(element: etree._Element) -> bool:
 
     local_template = xml_template
 
+    # If it's an element with a unique name like <work>, check if it's in the model
     matching_desc = [
         x for x in local_template.iterdescendants() if x.tag == element.tag
     ]
-    matching_desc = matching_desc[0]
+
+    # Otherwise, check the type
+    try:
+        element.get("type")
+        matching_desc = [
+            x for x in matching_desc if x.get("type") == element.get("type")
+        ]
+    except IndexError:
+        pass
+
+    try:
+        matching_desc = matching_desc[0]
+    except IndexError:
+        print(etree.tostring(local_template, pretty_print=True))
+        return False
 
     matching_desc.getparent().replace(
         old_element=matching_desc,
@@ -527,30 +538,47 @@ def validate_result(element: etree._Element) -> bool:
 
     # raise an unhandled exception if it doesn't validate
     print(etree.tostring(local_template, pretty_print=True))
-    return data_schema.validate(local_template)
+    try:
+        data_schema.assertValid(local_template)
+        # Only returns True is the assertValid function doesn't raise an exception
+        return True
+    except etree.DocumentInvalid as e:
+        print(f"Issues with validation: {e.args}")
+        return False
 
 
-def create_work(plaintext: str, title: str, author: str) -> etree._Element:
+def create_work_plaintext(plaintext: str, title: str, author: str, parse_string: bool=False) -> etree._Element:
     """This function returns a set of elements in the format defined in
     results-schema.xsd in this repository. It takes the cleaned text for
     a file, which is generated in the TEI_to_text function
 
 
-    @param plaintext:
-    @param title
-    @param author"""
+    @param plaintext    : All the text in this work, as pulled from the Perseus DL
+    @param title        : The title of the work as given in the tei:titleStmt/tei:title
+    @param author       : The author of the work as given in the tei:titleStmt/tei:author
+    @param parse_string : This makes it so this function can be reused. If true, this takes the plaintext string and treats it as a serialized XML document. See create_work_postagged() for more details."""
 
-    E.work(
-        E.title(),
-        E.author(),
-        E.plaintext(string, reviewed="notreviewed"),
+    element = E.work(
+        E.title(title),
+        E.author(author),
+        E.content(string, type="plaintext"),
+        reviewed="UNREVIEWED",
     )
 
+    if validate_result(element):
+        return element
+    else:
+        raise ResultsFailureError
 
-def add_plaintext(plaintext: str, xml: etree._Element) -> etree._Element:
+def add_to_work(element_to_add: etree._Element, element_destination: etree._Element):
     """
-    Add plain text to an already existing work. The work must"""
-    pass
+    Corresponds to create_work_plaintext, but instead adds or replaces the plaintext. """
+
+    if [x for x in ]:
+
+
+def create_work_postagged(element: etree._Element):
+
 
 
 #########################################################3
@@ -569,8 +597,8 @@ if __name__ == "__main__":
     # Debug
     # print(f"Printing the xml template:\n{prettyprint(xml_template)}")
 
-    xml_test = etree.fromstring("<plaintext>stuff</plaintext>")
-
-    """YOU WERE TESTING THE VALIDATION!!!!!!!"""
+    xml_test = etree.fromstring(
+        "<content><w>stuff</w><page>and more</page><w>things</w></content>"
+    )
 
     print(validate_result(xml_test))

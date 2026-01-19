@@ -12,24 +12,24 @@
                             <!-- Get the title from
                             tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author-->
                             <xs:element name="author" type="xs:string" minOccurs="1"></xs:element>
-                            <xs:element name="plaintext" minOccurs="1">
-                                <xs:complexType>
-                                    <xs:sequence>
-                                        <xs:element name="page" minOccurs="0"/>
-                                        <xs:any minOccurs="0"></xs:any>
+                            <xs:element name="content" minOccurs="1" maxOccurs="unbounded">
+                                <xs:complexType mixed="true">
+                                    <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                                        <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax"></xs:any>
                                     </xs:sequence>
+                                    <xs:attribute name="type" use="required">
+                                        <xs:simpleType>
+                                            <xs:restriction base="xs:string">
+                                                <xs:enumeration value="plaintext"></xs:enumeration>
+                                                <xs:enumeration value="postagged"></xs:enumeration>
+                                            </xs:restriction>
+                                        </xs:simpleType>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="postagged" minOccurs="1">
-                                <xs:complexType>
-                                    <xs:sequence>
-                                        <xs:any minOccurs="0"></xs:any>
-                                    </xs:sequence>
-                                    <xs:attribute ref="reviewed" />
-                                </xs:complexType>
-                            </xs:element>
+                            <xs:element name="pages" minOccurs="0" maxOccurs="unbounded"/>
                         </xs:sequence>
-                        <xs:attribute ref="reviewed" />
+                        <xs:attribute ref="reviewed" use="required"/>
                     </xs:complexType>
                 </xs:element>
             </xs:sequence>
@@ -40,8 +40,8 @@
     <xs:attribute name="reviewed">
         <xs:simpleType>
             <xs:restriction base="xs:string">
-                <xs:enumeration value="TRUE"/>
-                <xs:enumeration value="FALSE"/>
+                <xs:enumeration value="PASS"/>
+                <xs:enumeration value="FAIL"/>
                 <xs:enumeration value="UNREVIEWED"/>
             </xs:restriction>
         </xs:simpleType>

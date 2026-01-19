@@ -2,7 +2,10 @@
 <root xmlns:xsi="https://www.w3.org/2001/XMLSchema" xsi:schemaLocation="results-schema.xsd">
     <work>
         <page>
-            <plaintext/>
+            <plaintext>
+                <w>stuff</w>
+                <w>things</w>
+            </plaintext>
             <postagged/>
         </page>
     </work>
