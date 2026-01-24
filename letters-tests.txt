@@ -1,518 +1,236 @@
-2026-01-24T14:59:41.134825
+
+2026-01-24T15:45:45.536883
 C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\phi2331\phi012\phi2331.phi012.perseus-lat2.xml
-2026-01-24T14:59:41.136668
+2026-01-24T15:45:45.554444
 []
 *************************
 
 
-2026-01-24T14:59:41.137419
-specialem principem haberent, undique
-2026-01-24T14:59:41.138094
-enim et Septimium Severum
-2026-01-24T14:59:41.138718
-ad eum quasi ad
-2026-01-24T14:59:41.139347
-eodem posita iam tribuno
-2026-01-24T14:59:41.139955
-illi ioco nutricis etiam
-2026-01-24T14:59:41.140510
-sibi socium adscisceret, et
-2026-01-24T14:59:41.141088
-et Clodium quidem Herodianus
-2026-01-24T14:59:41.142221
-ut Maximus dicit, duo.
-
-2026-01-24T14:59:41.143797
-eo nomen acceperit, voce
-2026-01-24T14:59:41.144797
-Pertinacis Iuliano auctor fuit.
-
-2026-01-24T14:59:41.145959
-consisteret, non ad Vitellios
-2026-01-24T14:59:41.146644
-ostentet, habiturus praemium quod
-2026-01-24T14:59:41.147261
-vocant, ieiunum comedisse dicit
-2026-01-24T14:59:41.147851
-ea specie ne mandata
-2026-01-24T14:59:41.148483
-parvulae de nidis adlatae
-2026-01-24T14:59:41.149193
-et in Gallia quidem
-2026-01-24T14:59:41.149867
-acceperit, voce muliebri et
-2026-01-24T14:59:41.150677
-Fuit statura procerus, capillo
-2026-01-24T14:59:41.151362
-sui temporis Catilina diceretur.
-
-2026-01-24T14:59:41.152000
-cum omnino neminem paterentur
-2026-01-24T14:59:41.152877
-virum Albinum fuisse indicant,
-2026-01-24T14:59:41.153821
-Septimius Afer esset.
- fuit
-2026-01-24T14:59:41.154719
-quod et ipsi suum
-2026-01-24T14:59:41.155449
-sonum, motu facili, iracundia
-2026-01-24T14:59:41.156076
-earum accolas conciliaret.
- Gulosum
-2026-01-24T14:59:41.156653
-denique illius contio qua,
-2026-01-24T14:59:41.157229
-illi facta est.
- qua
-2026-01-24T14:59:41.157729
-soli studens copiae, mulierarius
-2026-01-24T14:59:41.158282
-miris adclamationibus absentem eum
-2026-01-24T14:59:41.159582
-meos litteras misi, quas
-2026-01-24T14:59:41.161490
-esset, exemplum indidi: Imperator
-2026-01-24T14:59:41.162618
-tormentis dedit, qui diu
-2026-01-24T14:59:41.163374
-Albino et eius fratri
-2026-01-24T14:59:41.164216
-Clodium Albinum sibi substitueret.
-
-2026-01-24T14:59:41.165630
-ad Avidium Cassium confugerent.
-
-2026-01-24T14:59:41.166479
-adfines et fratrem praecipue
-2026-01-24T14:59:41.167237
-timuit, cum sententiae in
-2026-01-24T14:59:41.167895
-speciatim Severi, quem vehementer
-2026-01-24T14:59:41.168689
-Albino Caesari, fratri amantissimo
-2026-01-24T14:59:41.169312
-excipies signo Amazonio et,
-2026-01-24T14:59:41.169885
-senatus; subegisset, nisi tam
-2026-01-24T14:59:41.170452
-senatui autem tantum placuit,
-2026-01-24T14:59:41.171061
-deberetis, qui vos amaret?
-2026-01-24T14:59:41.171689
-epistulas repperit hostes iudicari
-2026-01-24T14:59:41.172254
-epistula, qua idem Marcus
-2026-01-24T14:59:41.172786
-non fecisset, homo in
-2026-01-24T14:59:41.173343
-vetus haberet imperium, nec
-2026-01-24T14:59:41.173939
-Gulosum eum Cordus, qui
-2026-01-24T14:59:41.174495
-signa imperii futuri fuere,
-2026-01-24T14:59:41.175435
-tribunus equites Dalmatas; egit
-2026-01-24T14:59:41.179081
-vos adhortamini, ut se
-2026-01-24T14:59:41.180035
-vocant, ieiunum comedisse dicit
-2026-01-24T14:59:41.181967
-Pescennio Princo munera digna
-2026-01-24T14:59:41.182716
-venit, et primo quidem
-2026-01-24T14:59:41.183404
-in luxurie varius, nam
-2026-01-24T14:59:41.184180
-Severus ipse Caesarem suum
-2026-01-24T14:59:41.184963
-voluntati et Severi Augusti
-2026-01-24T14:59:41.185790
-aureos liberam potestatem, quia
-2026-01-24T14:59:41.188451
-se multum senatui commendat,
-2026-01-24T14:59:41.189521
-animo rem publicam regas
-2026-01-24T14:59:41.190266
-ingenti collecto contra Severum
-2026-01-24T14:59:41.190915
-abnuit et iussit aquilas
-2026-01-24T14:59:41.194587
-nisi hic fuisset, omnes
-2026-01-24T14:59:41.197003
-carissime, mi amantissime.
- Et
-2026-01-24T14:59:41.202301
-ne alii quidem velint,
-2026-01-24T14:59:41.207703
-hoc eodem scripsit, cuius
-2026-01-24T14:59:41.208674
-hoc esse Cordus ostendit:
-2026-01-24T14:59:41.209752
+2026-01-24T15:45:45.555893
+ficedulas centum et ostrea
+2026-01-24T15:45:45.557254
+inter puerulos Arma amens
+2026-01-24T15:45:45.558296
+imperium tunc tenebat.
+ quare,
+2026-01-24T15:45:45.559595
+ficedulas centum et ostrea
+2026-01-24T15:45:45.561325
 a malis tyrannicis liberavi,
-2026-01-24T14:59:41.211740
-fuit dolor, quod illum
-2026-01-24T14:59:41.212680
-qui eius nece a
-2026-01-24T14:59:41.215816
-circa Clodium Albinum videret,
-2026-01-24T14:59:41.216682
-natus, facta dicuntur, nam
-2026-01-24T14:59:41.248692
-Poenos, quod Septimius Afer
-2026-01-24T14:59:41.251903
-Albino, alias ad te
-2026-01-24T14:59:41.253577
-interemptum adhuc falso comperisset,
-2026-01-24T14:59:41.260398
-potestate res tanta consisteret,
-2026-01-24T14:59:41.265002
-bellicas pertinerent et ad
-2026-01-24T14:59:41.265773
-sed postea victi necessitate
-2026-01-24T14:59:41.266606
-Clodium quidem Herodianus dicit
-2026-01-24T14:59:41.267454
-Commodum in Albinum exasperavit,
-2026-01-24T14:59:41.268427
-sanctis, patre Ceionio Postumo,
-2026-01-24T14:59:41.269287
-est.
- unde confirmatum est
-2026-01-24T14:59:41.270110
-testudo ingens patri eius
-2026-01-24T14:59:41.272629
-litteras, et multi de
-2026-01-24T14:59:41.273454
-illorum quidem fides defuit.
-
-2026-01-24T14:59:41.274257
-frequenter abstinens, armorum sciens
-2026-01-24T14:59:41.277577
-quantum videtur, eorum ipsorum.
-
-2026-01-24T14:59:41.280281
-est quantum nemo principum,
-2026-01-24T14:59:41.282009
-Severo gratiam requirebant.
- Fuit
-2026-01-24T14:59:41.284100
-dictator, hic ipse Commodus
-2026-01-24T14:59:41.284852
-designat, adfinem, quantum videtur,
-2026-01-24T14:59:41.286072
-excaldationes pueriles dicari, nobilitandum
-2026-01-24T14:59:41.289135
-hoc superfuit, ut de
-2026-01-24T14:59:41.300153
-valuerit.
- ut autem hoc
-2026-01-24T14:59:41.307850
-esset, exemplum indidi: Imperator
-2026-01-24T14:59:41.311039
-occidendi Pertinacis Iuliano auctor
-2026-01-24T14:59:41.314579
-puer vita functus est,
-2026-01-24T14:59:41.340604
-publicam regi, is per
-2026-01-24T14:59:41.341387
-ad res bellicas pertinerent
-2026-01-24T14:59:41.345747
+2026-01-24T15:45:45.562754
+trahebat, nolens intellegi Pessimus
+2026-01-24T15:45:45.563843
+matre Aurelia Messalina, primus
+2026-01-24T15:45:45.565065
+illi sortem de fato
+2026-01-24T15:45:45.569593
+purpurea matris inligatus est
+2026-01-24T15:45:45.571333
 C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\stoa0255\stoa004\stoa0255.stoa004.perseus-lat2.xml
-2026-01-24T14:59:41.351699
+2026-01-24T15:45:45.593312
 []
 *************************
 
 
-2026-01-24T14:59:41.357374
-illi clarissimi sacrarum opinionum
-2026-01-24T14:59:41.357996
-evasuram tam praecoquem audaciam.
-
-2026-01-24T14:59:41.358741
-magis miserear, si hoc
-2026-01-24T14:59:41.359441
-plurium tabularum contextus caudex
-2026-01-24T14:59:41.360281
-non procul spes intendit
-2026-01-24T14:59:41.360973
-eloquentia et cotidiana ostentandi
-2026-01-24T14:59:41.361574
-animus intrepidus, quid tibi
-2026-01-24T14:59:41.362240
-cum diu torserint, simulata
-2026-01-24T14:59:41.362825
-" Exigua pars est
-2026-01-24T14:59:41.363417
-aliud illi nomen imponas;
-2026-01-24T14:59:41.363973
-omnibus recesserint, sibi ipsi
-2026-01-24T14:59:41.364573
-; quibusdam nihil, quo
-2026-01-24T14:59:41.365235
-excoquendi in sole corporis
-2026-01-24T14:59:41.365823
-retemptare, quorum vitia, etiam
-2026-01-24T14:59:41.366457
-At me hercules numquam
-2026-01-24T14:59:41.367106
-per eadem spatia in
-2026-01-24T14:59:41.367820
-ut vivere scirent ;
-2026-01-24T14:59:41.368488
-sunt ; at praeteriti
-2026-01-24T14:59:41.369171
-mortalitatis admonuit, quemadmodum paventes
-2026-01-24T14:59:41.369816
-impedimentis, cum divitiis officiis
-2026-01-24T14:59:41.370474
-immortales concupiscitis.
- Audies plerosque
-2026-01-24T14:59:41.371170
-futuri desiderio laborat, praesentium
-2026-01-24T14:59:41.371814
-in Sicilia Poenis triumphantem
-2026-01-24T14:59:41.372517
-deducimur; nullo nobis saeculo
-2026-01-24T14:59:41.373220
-sinunt, sed immersos et
-2026-01-24T14:59:41.377870
-dies, quibus C.
- Caesar
-2026-01-24T14:59:41.380515
-maiore possideant.
- Operose adsecuntur
-2026-01-24T14:59:41.381987
-dies abstulit ? Quot
-2026-01-24T14:59:41.384096
-necesse est, non tantum
-2026-01-24T14:59:41.385547
-concubitus delenitus duplicasse noctem.
-
-2026-01-24T14:59:41.386865
-dies miseris mortalibus aevi
-2026-01-24T14:59:41.387810
-superbi regis imitatio.
- Quem
-2026-01-24T14:59:41.388747
-non observatis, quantum iam
-2026-01-24T14:59:41.389736
-semper sonant, quorum, cum
-2026-01-24T14:59:41.390667
-cliens abstuleris quantum lis
-2026-01-24T14:59:41.391665
-Suis opibus distinetur.
- Marium
-2026-01-24T14:59:41.392780
-protulisse pomerium, quod numquam
-2026-01-24T14:59:41.394020
-quando in statu suo
-2026-01-24T14:59:41.395156
-subest quod excipiat ac
-2026-01-24T14:59:41.396038
-nostra incendere quam auctores
-2026-01-24T14:59:41.396910
-quasi felicitatis argumenta delectant
-2026-01-24T14:59:41.399057
-se ipsa fortuna ruit.
-
-2026-01-24T14:59:41.406630
-eos fide bona dicere,
-2026-01-24T14:59:41.407552
-deliciis interierit ut an
-2026-01-24T14:59:41.410995
-annos, nemo iterum te
-2026-01-24T14:59:41.412512
-; nimis humilis et
-2026-01-24T14:59:41.413175
-nullius sumptuosa observatio.
- Feres
-2026-01-24T14:59:41.415062
-generosam pernicitatem quis umquam
-2026-01-24T14:59:41.416807
-si hoc ignoravit, an
-2026-01-24T14:59:41.418007
-dum rapiuntur et rapiunt,
-2026-01-24T14:59:41.418708
-est.
- Singuli tantum dies,
-2026-01-24T14:59:41.419420
-ex balneo inter manus
-2026-01-24T14:59:41.420170
-quod gaudia quoque eorum
-2026-01-24T14:59:41.420938
-reddent ! Hos in
-2026-01-24T14:59:41.421617
-adhuc et praetextatus iudicibus
-2026-01-24T14:59:41.422345
-deserere illas non liceat,
-2026-01-24T14:59:41.423004
-Romanorum ante currum centum
-2026-01-24T14:59:41.423649
-superesse, trepidarent, quomodo illis
-2026-01-24T14:59:41.424268
-numquam amplius redituri temporis
-2026-01-24T14:59:41.425032
-vitae multum bonarum artium,
-2026-01-24T14:59:41.425901
-Mirari soleo, cum video
-2026-01-24T14:59:41.426533
-ad computationem aetatem tuam
-2026-01-24T14:59:41.427386
-in tam humile nomen
-2026-01-24T14:59:41.428224
-subducitur.
- Denique vis scire
-2026-01-24T14:59:41.428999
-an si ignorare se
-2026-01-24T14:59:41.429621
-seponit.
- Lex a quinquagesimo
-2026-01-24T14:59:41.430278
-quod vigilantes dormientesque eodem
-2026-01-24T14:59:41.430996
-diligenter quam tuas, tam
-2026-01-24T14:59:41.431744
-tamen errant ; licet
-2026-01-24T14:59:41.432411
-aetatis humanae videmus, centesimus
-2026-01-24T14:59:41.433010
-quod ipsis adire volentibus
-2026-01-24T14:59:41.433615
-volent habere quam familiarissimos.
-
-2026-01-24T14:59:41.434340
-natis beluis obiceret, cum
-2026-01-24T14:59:41.435111
-" Ab hoc affectu
-2026-01-24T14:59:41.435893
-intra paucos illos dies,
-2026-01-24T14:59:41.436511
-ad quam imparati inermesque
-2026-01-24T14:59:41.437097
-quod in nullius arbitrium
-2026-01-24T14:59:41.437702
-et imperitae coronae assensiones
-2026-01-24T14:59:41.438287
-Quid illi, qui in
-2026-01-24T14:59:41.438859
-diu vivere.
- Decrepiti senes
-2026-01-24T14:59:41.439417
-conversatio abstulerit, quam exiguum
-2026-01-24T14:59:41.440078
-desidiosa occupatio.
- Illum tu
-2026-01-24T14:59:41.440689
-tamen, mihi crede, satius
-2026-01-24T14:59:41.441278
-magno aestimavit : "
-2026-01-24T14:59:41.442216
-moram patitur quam mundus
-2026-01-24T14:59:41.442899
-dicere solent eis, quos
-2026-01-24T14:59:41.443553
-notis: ille illius cultor
-2026-01-24T14:59:41.444578
-moram patitur quam mundus
-2026-01-24T14:59:41.445289
-tamquam exeant de vita,
-2026-01-24T14:59:41.446343
-Hoc quoque pulcherrime ad
-2026-01-24T14:59:41.447251
-; quosdam torquet cupido
-2026-01-24T14:59:41.447984
-quemadmodum praeteritorum annorum cuiusque
-2026-01-24T14:59:41.448635
-est.
- Libet itaque ex
-2026-01-24T14:59:41.449352
-possimus neglegentiam.
- Esse aliquem,
-2026-01-24T14:59:41.450059
-sed diem dicit.
- Quid
-2026-01-24T14:59:41.450703
-inveni : " Sed
-2026-01-24T14:59:41.451419
-adici sic, quemadmodum saturo
-2026-01-24T14:59:41.452320
-; difficilius homines a
-2026-01-24T14:59:41.453204
-et infeliciter superbi regis
-
-
-
-2026-01-24T15:04:51.314759
+2026-01-24T15:45:45.594385
+comam suam ? Qui
+2026-01-24T15:45:45.596486
+deficiat.
+ Nec est tamen,
+2026-01-24T15:45:45.598468
+similia ? Nam ut
+2026-01-24T15:45:45.599781
+dictus.
+ Num et hoc
+2026-01-24T15:45:45.601983
+cultor est, hic illius;
+2026-01-24T15:45:45.604491
+ad consuetudinem relabuntur.
+ Vestra
+2026-01-24T15:45:45.606524
+laborat, praesentium taedio.
+ At
+2026-01-24T15:45:45.607617
+sui.
+ Sed ut illo
+2026-01-24T15:48:52.009956
 C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\phi2331\phi012\phi2331.phi012.perseus-lat2.xml
-2026-01-24T15:04:51.323608
+2026-01-24T15:48:52.019822
 []
 *************************
 
 
-2026-01-24T15:04:51.324350
-morum, quarum unam inserere
-2026-01-24T15:04:51.325032
-aerarium publicum rettulit.
- Exstat
-2026-01-24T15:04:51.325750
-sortem de fato suo
-2026-01-24T15:04:51.326398
-omnes fecissent, habemus igitur
-2026-01-24T15:04:51.327169
-illam, qua Severum laudatum
-2026-01-24T15:04:51.328136
+2026-01-24T15:48:52.021144
+illi sortem de fato
+2026-01-24T15:48:52.021763
+luxuriosum.
+ sed haec belli
+2026-01-24T15:48:52.022385
+post bellum, quando ei
+2026-01-24T15:48:52.022971
+ludicra litteraria consenesceret.
+ hinc
+2026-01-24T15:48:52.023616
 speciatim Severi, quem vehementer
-2026-01-24T15:04:51.328942
-amantissimo et desiderantissimo, salutem,
-2026-01-24T15:04:51.329910
-et vestrae voluntati et
-2026-01-24T15:04:51.330663
-causas ostendere quibus amorem
-2026-01-24T15:04:51.331401
-timens ne ipse pariter
-2026-01-24T15:04:51.332100
-Pescennio subrogare.
- Ad imperium
-2026-01-24T15:04:51.332962
-loquitur Pescennium Peter ;
-2026-01-24T15:04:51.333711
-unum ex contubernalibus suis.
+2026-01-24T15:48:52.024188
+cuncta turbata sunt.
+ Fuit
+2026-01-24T15:48:52.024820
+matre Aurelia Messalina, primus
+2026-01-24T15:48:52.025443
+morum, quarum unam inserere
+2026-01-24T15:48:52.026527
+et adprobatio Nigri Pescennii.
 
-2026-01-24T15:04:51.334466
-est.
- quae tamen in
-2026-01-24T15:04:51.335183
-esset, exemplum indidi: Imperator
-2026-01-24T15:04:51.335914
-fideliter rem publicam regeret,
-2026-01-24T15:04:51.336516
-eius duces venit, et
-2026-01-24T15:04:51.337265
-et morum, quarum unam
-2026-01-24T15:04:51.338365
-Bassianum: Filius mihi natus
-2026-01-24T15:04:51.339312
-cum Pescennio subrogare.
- Ad
-2026-01-24T15:04:51.340337
-Clodius Albinus in Gallia
-2026-01-24T15:04:51.341089
-eum adserit ebrium etiam
-2026-01-24T15:04:51.341813
+2026-01-24T15:48:52.027113
+et apud Iulianum de
+2026-01-24T15:48:52.027636
+honore cumularent.
+ iacuisse ante
+2026-01-24T15:48:52.028345
+Nigrum et Clodium Albinum
+2026-01-24T15:48:52.029103
+ipse pariter occideretur.
+ Exstat
+2026-01-24T15:48:52.029899
+persequitur.
+ Adulescens igitur statim
+2026-01-24T15:48:52.031498
+quod et factum est.
+
+2026-01-24T15:48:52.032503
+patris epistula ad Aelium
+2026-01-24T15:48:52.034671
+quidem homini sed non
+2026-01-24T15:48:52.035566
+dicunt, filius, ut Maximus
+2026-01-24T15:48:52.036338
+cum eo fideliter rem
+2026-01-24T15:48:52.037211
+ad Aelium Bassianum tunc
+2026-01-24T15:48:52.037856
+rubere , esset candidissimus,
+2026-01-24T15:48:52.038465
+adiciam, habebis utendi coccini
+2026-01-24T15:48:52.039167
 C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\stoa0255\stoa004\stoa0255.stoa004.perseus-lat2.xml
-2026-01-24T15:04:51.352023
+2026-01-24T15:48:52.051891
 []
 *************************
 
 
-2026-01-24T15:04:51.352650
-agentibus ad meliora eundum
-2026-01-24T15:04:51.353518
-a lege.
- Interim dum
-2026-01-24T15:04:51.354814
-mortalitatis, immo in immortalitatem
-2026-01-24T15:04:51.355769
-est.
- Urgent et circumstant
+2026-01-24T15:48:52.053113
+agetur, semper optabitur.
+ Excerpe
+2026-01-24T15:48:52.053824
+! Potentissimis et in
+2026-01-24T15:48:52.054602
+ore instinctus salutare carmen
+2026-01-24T15:48:52.055363
+video aliquos tempus petentes
+2026-01-24T15:48:52.056356
+recordatio.
+ Inviti itaque ad
+2026-01-24T15:48:52.057075
+suae querella detinuit; plerosque
+2026-01-24T15:48:52.058316
+consuetudinem relabuntur.
+ Vestra me
+2026-01-24T15:48:52.058991
+rerum quies.
+ Omnium quidem
+2026-01-24T15:53:22.421158
+C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\phi2331\phi012\phi2331.phi012.perseus-lat2.xml
+2026-01-24T15:53:22.427045
+[]
+*************************
+
+
+2026-01-24T15:53:22.427584
+die hora convivii, quod
+2026-01-24T15:53:22.428266
+necisque potestatem atque imperium
+2026-01-24T15:53:22.428770
+lata et candore mirabili,
+2026-01-24T15:53:22.429242
+cum illi sortem de
+2026-01-24T15:53:22.429708
+constitutae.
+ nec hoc omen
+2026-01-24T15:53:22.430209
+mortuum, quod et factum
+2026-01-24T15:53:22.430651
+dicari, nobilitandum etiam hinc
+2026-01-24T15:53:22.431219
+vos a malis tyrannicis
+2026-01-24T15:53:22.431706
+candidus statim toto corpore,
+2026-01-24T15:53:22.432166
+imperialis maiestatis adiciam, habebis
+2026-01-24T15:53:22.432657
+tuo Pescennio Princo munera
+2026-01-24T15:53:22.433206
+ipsi senatores.
+ Haec contio
+2026-01-24T15:53:22.433655
+hoc exemplum est: Nihil
+2026-01-24T15:53:22.434309
+purpureis ad plenum colorem
+2026-01-24T15:53:22.434813
+Herodianus dicit Severi Caesarem
+2026-01-24T15:53:22.435296
+senatores.
+ Haec contio vivo
+2026-01-24T15:53:22.435831
+sortem de fato suo
+2026-01-24T15:53:22.436349
+viventis consulem subrogasse.
+ et
+2026-01-24T15:53:22.436870
+sua loquitur sed victo
+2026-01-24T15:53:22.437369
+familiis trahens, Postumiorum scilicet
+2026-01-24T15:53:22.437914
+publicae ostentet, habiturus praemium
+2026-01-24T15:53:22.438397
+Postumianum suos adfines innotuit.
+
+2026-01-24T15:53:22.438934
+insignia.
+ non eam gratiam
+2026-01-24T15:53:22.439425
+praecipue ingenti honore cumularent.
+
+2026-01-24T15:53:22.439923
+praeceperat.
+ Tunc iam proditis
+2026-01-24T15:53:22.440469
+C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\stoa0255\stoa004\stoa0255.stoa004.perseus-lat2.xml
+2026-01-24T15:53:22.447614
+[]
+*************************
+
+
+2026-01-24T15:53:22.448497
+usque eo nimio delicati
+2026-01-24T15:53:22.449018
+quae aut farta sunt
+2026-01-24T15:53:22.449651
+populo Romano superstiti septem
+2026-01-24T15:53:22.450128
+tantum deplorandi sunt.
+ In
+2026-01-24T15:53:22.450726
+exigunt ! Inde etiam
+2026-01-24T15:53:22.451419
+ipso fugiente.
+ Num dubium
+2026-01-24T15:53:22.451929
+an tempestiva.
+ Supervacuum est
+2026-01-24T15:53:22.452468
+sit.
+ Cum videris itaque
+2026-01-24T15:53:22.453082
+similitudinem effingat.
+ Solemus dicere

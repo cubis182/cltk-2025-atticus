@@ -395,11 +395,14 @@ def get_text(element) -> str:
                     "" if child.tail is None else child.tail
                 )
         string += sTail
-    elif sTail:
+    elif sTail and tagValid > -1:
         string += sTail
 
     # DEBUG
     if string == "":
+        pass
+
+    if element.tag == "{http://www.tei-c.org/ns/1.0}add":
         pass
 
     return string
@@ -948,9 +951,8 @@ if __name__ == "__main__":
     # Debug
     # print(f"Printing the xml template:\n{prettyprint(xml_template)}")
 
-    perseus_to_file(pathArg="", index=[0, 22])
+    # perseus_to_file(pathArg="", index=[0, 22])
 
-    """
     data_file = open_results()
 
     schema: etree.XMLSchema = data_schema
@@ -958,4 +960,3 @@ if __name__ == "__main__":
     schema_validated: bool = schema.assertValid(data_file.getroottree())
 
     automatic_validation()
-    """
