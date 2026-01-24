@@ -50,6 +50,7 @@ Solutions required:
 import os
 import pdfplumber
 import re
+import datetime
 
 Y_DENSITY = 8
 DEBUG_DIR = "C:/Users/T470s/Documents/GitHub/cltk-2025-atticus"
@@ -79,13 +80,14 @@ to do more tests.
 pdfV1 = pdfplumber.open(str(dir + Vol1))
 
 
-def save_output(text: str) -> bool:
+def save_output(text: str, method: str = "w") -> None:
     """
     Saves text to a file called 'letters-tests.txt'.
     The directory is specified in the DEBUG_DIR at
     the top of the file."""
-    with open((DEBUG_DIR + "./letters-tests.txt"), "w", encoding="utf-8") as output:
-        output.write(text)
+    with open((DEBUG_DIR + "./letters-tests.txt"), method, encoding="utf-8") as output:
+        output.write(datetime.datetime.now().isoformat() + "\n")
+        output.write(text + "\n")
         output.close()
 
 
@@ -277,11 +279,11 @@ def prettyprint(element, **kwargs):
     print(xml.decode(), end="")
 
 
-from lxml import etree
+from lxml import etree  # type: ignore
 from lxml.builder import E
 from pathlib import Path
 from random import choice
-import re
+import io
 
 # Add the directory containing your module to the Python path
 import os
@@ -289,14 +291,17 @@ import sys
 
 dir_path = Path(__file__)
 dir_path = dir_path.parents[0]
-sys.path.append(dir_path)
+sys.path.append(str(dir_path))
 os.chdir(dir_path)
+
+# TODO CREATE A TABLE OF CONTENTS FOR ALL THESE NEW FUNCTIONS!!!!
 
 s_xml_template = """
 <root xmlns:xsi="http://www.w3.org/2001/XMLSchema">
     <work reviewed="UNREVIEWED">
         <title/>
         <author/>
+        <path></path>
         <content type="plaintext"/>
         <content type="postagged"/>
     </work>
@@ -339,27 +344,41 @@ inval_tags = [
 ]
 
 
-def is_valid_tag(element) -> int:
-    l = list(element.iterancestors(tag=inval_tags))
+def is_valid_tag(element: etree._Element) -> int:
+    """
+    Checks whether a tag from a TEI:XML document is valid. A valid tag is one whose text we want for the purpose of processing the text. A tag like <note> has irrelevant text, so it's invalid. See the inval_tags variable above for a full list
+    """
+    l: list = list(element.iterancestors(tag=inval_tags))
     boolean = bool(l)
-    if element.tag in inval_tags:
-        return 0
-    elif boolean:
+    if boolean:
         return -1
+    elif element.tag in inval_tags:
+        return 0
     else:
         return 1
 
 
+def has_tail(element) -> bool:
+    try:
+        tail = element.tail
+        if any(re.search("[A-Za-z0-9]", s) for s in tail):
+            return True
+        else:
+            return False
+    except TypeError:
+        return False
+
+
 def get_text(element) -> str:
     string = ""
-    sTail = element.tail
-    sText = element.text
-    parent = element.getparent()
-    pText = parent.text
-    pTail = parent.tail
+    sTail: str = element.tail
+    sText: str = element.text
+    parent: etree._Element = element.getparent()
+    pText: str = parent.text
+    pTail: str = parent.tail
 
     if pTail:
-        if any(re.search("[A-Za-z0-9]", s) for s in pTail):
+        if has_tail(parent):
             return string
 
     tagValid = is_valid_tag(element)
@@ -367,15 +386,14 @@ def get_text(element) -> str:
         if sText:
             string += sText
 
-    # Make sure it has a tail and that it isn't inside of an invalid tag
-    if (sTail) and (tagValid == 1):
-        if not (re.search("[A-Za-z0-9]", sTail) is None):
-            children = [x for x in element.iterdescendants() if (x.tail or x.text)]
-            for child in children:
-                if is_valid_tag(child):
-                    string += ("" if child.text is None else child.text) + (
-                        "" if child.tail is None else child.tail
-                    )
+    # Make sure it has a tail with alphanumeric characters in it and that it isn't inside of an invalid tag
+    if (has_tail(element)) and (tagValid == 1):
+        children: list = [x for x in element.iterdescendants() if (x.tail or x.text)]
+        for child in children:
+            if is_valid_tag(child):
+                string += ("" if child.text is None else child.text) + (
+                    "" if child.tail is None else child.tail
+                )
         string += sTail
     elif sTail:
         string += sTail
@@ -387,22 +405,115 @@ def get_text(element) -> str:
     return string
 
 
-def TEI_to_text(pathArg="", index=-1):
+def perseus_to_file(pathArg, index) -> None:
+    """
+    TODO TEST!
+    This function wraps around the TEI_to_text file, adding each file to the output data file
+
+    NEEDSDOC
+    @param pathArg : An optional string or list of strings which gives the specific path(s) you want to parse. Type "rand" if you want a random one
+    @param index   : An optional integer index of the location in the file list of the path. Can also be a sequence of integers
+    """
+
+    # File the results will go in.
+    data_file: etree._Element = open_results()
+
+    list_of_works = TEI_to_text(pathArg=pathArg, index=index)
+
+    for work in list_of_works:
+        add_work(work, data_file)
+
+    # Finally, add the updated results
+    data_file.getroottree().write(results_file, encoding="utf-8")
+
+
+def get_paths() -> list[Path]:
+    """
+    Returns a list of paths to all Perseus DL Latin texts"""
+
+    # path to PerseusDL
+    dir: Path = Path("C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/")
+
+    # paths to all the files in the corpus, identified by -lat and the .xml extension.
+    return list(dir.glob("**/**-lat*.xml"))
+
+
+def get_title_auth_body(tree: etree._Element) -> dict:
+    # We need to make sure it's a real TEI file with the xml namespace.
+    # Some files in the PerseusDL use TEI without the namespace
+
+    tei: dict = {"tei": "http://www.tei-c.org/ns/1.0"}
+
+    # First, assume no namespace
+    expression: str = "//body"
+
+    # XPath expression for the title
+    title: str = "/teiHeader/fileDesc/titleStmt/title/text()"
+    titleString: str = ""
+
+    # XPath expression for the author's name
+    author: str = "/teiHeader/fileDesc/titleStmt/author/text()"
+    authorString: str = ""
+
+    # However, if there is a namespace with the TEI URI (which is given in the 'tei' variable above), we need a tei namespace declared
+    nsmap: list = list(tree.nsmap.values())
+    is_TEI: bool = tei["tei"] == nsmap[0]
+
+    body = __run_xpath(expression, is_TEI, tree, tei)
+
+    # We need to test a few things in case the title isn't in the right spot
+    titleEl = __run_xpath(title, is_TEI, tree, tei)
+
+    if not titleEl:
+        titleEl = __run_xpath("//biblStruct/monogr/title/text()", is_TEI, tree, tei)
+
+    authorEl = __run_xpath(author, is_TEI, tree, tei)
+
+    if not authorEl:
+        authorEl = __run_xpath("//biblStruct//author/text()", is_TEI, tree, tei)
+
+    # If we still don't have a valid author or title node, we give up
+    if titleEl:
+        titleString = titleEl[0]
+    else:
+        titleString = ""
+
+    if authorEl:
+        authorString = authorEl[0]
+    else:
+        authorString = ""
+
+    return {"body": body, "title": titleString, "author": authorString}
+
+
+def __run_xpath(expr: str, is_tei: bool, tree: etree._Element, tei: dict):
+    """
+    NEEDSDOC"""
+
+    if is_tei:
+        expr = re.sub("/(?=[A-Za-z0-9])", f"/tei:", expr)
+        # make sure no namespace is in front of 'text()'
+        expr = re.sub("tei:text\\(\\)", "text()", expr)
+        elem = tree.xpath(expr, namespaces=tei)
+        return elem
+    else:
+        return tree.xpath(expr)
+
+
+def TEI_to_text(pathArg="", index=-1) -> list[etree._Element]:
     """
     This function returns a plaintext version of the TEI XML files in the
     Perseus Digital Library. The function currently assumes the path to the
     Perseus DL is the one on my system:
     C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/perseus-debug.txt.
     The function can work with no namespace or TEI.
-    @param pathArg: An optional string or list of strings which gives the specific path(s) you want to parse. Type "rand" if you want a random one
-    @param index: An optional integer index of the location in the file list of the path. Can also be a sequence of integers
+
+    @param pathArg : An optional string or list of strings which gives the specific path(s) you want to parse. Type "rand" if you want a random one
+    @param index   : An optional integer index of the location in the file list of the path. Can also be a sequence of integers
     """
 
-    # path to PerseusDL
-    dir = Path("C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/")
-
-    # paths to all the files in the corpus, identified by -lat and the .xml extension.
-    paths = list(dir.glob("**/**-lat*.xml"))
+    # Get the Perseus DL paths
+    paths = get_paths()
 
     # Check whether the index argument was given and whether it's a valid value. If both a path or index is given, default to index
     if index != -1:
@@ -413,60 +524,41 @@ def TEI_to_text(pathArg="", index=-1):
             paths = pathsByIndex
         else:
             paths = [paths[index]]
-
     # Check whether the path argument was given and whether it's a valid value
-    if index == -1:
+    else:
+        # If the pathArg is rand, that means we select a random path.
+        # If the pathArg is the default value, we already got all the paths we need with the get_paths()
+        # If we passed a list of paths to pathArg, we replace paths with that list
         if pathArg == "rand":
             paths = [choice(paths)]
         elif pathArg == "":
             pass
         elif isinstance(pathArg, list):
+            # Don't know why I went with this method of assignment, but I won't touch it until I debug this function
             paths = []
             for s in pathArg:
                 paths.append(s)
 
     # An lxml.etree._Element which is a single element, <root></root>
-    worksProcessed = etree.fromstring("<root></root>")
+    worksProcessed: list = []
 
     for path in paths:
         # Don't resolve entities to avoid potential errors (entities are things like &colon;)
-        parser = etree.XMLParser(resolve_entities=False)
-        tree = etree.parse(path, parser)  # Use path 22 for debugging
-        tei = {"tei": "http://www.tei-c.org/ns/1.0"}
+        parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
+        tree: etree.ElementTree = etree.parse(path, parser)  # Use path 22 for debugging
 
         # Get the root of the tree. This variable will eventually hold the tei:body element
-        body = tree.getroot()
+        body: etree._Element = tree.getroot()
 
-        # We need to make sure it's a real TEI file with the xml namespace.
-        # Some files in the PerseusDL use TEI without the namespace
+        authority_dict = get_title_auth_body(body)
 
-        # First, assume no namespace
-        expression = ".//body"
-
-        # XPath expression for the title
-        title = "./tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text()"
-        titleString = ""
-
-        # XPath expression for the author's name
-        author = "./tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author/text()"
-        authorString = ""
-
-        # However, if there is a namespace with the TEI URI (which is given in the 'tei' variable above), we need a tei namespace declared
-        nsmap = list(body.nsmap.values())
-        if tei["tei"] == nsmap[0]:
-            expression = ".//tei:body"
-            body = tree.xpath(expression, namespaces=tei)
-            titleString = tree.xpath(title, namespaces=tei)
-            authorString = tree.xpath(author, namespaces=tei)
-        # If there is no namespace, stick with the './/body' xpath expression with no namespace
-        else:
-            body = tree.xpath(expression)
-            titleString = tree.xpath(re.sub("tei:", "", title))
-            authorString = tree.xpath(re.sub("tei:", "", author))
+        body = authority_dict["body"]
+        titleString = authority_dict["title"]
+        authorString = authority_dict["author"]
 
         # Remember, when there are potentially Greek characters, we need encoding set to UTF-8.
         # This debug file will store the results before the final version of the program
-        debug = open(
+        debug: io.TextIOWrapper = open(
             "C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/perseus-debug.txt",
             "w",
             encoding="utf-8",
@@ -476,7 +568,10 @@ def TEI_to_text(pathArg="", index=-1):
         if len(body):
             body = body[0]
 
-        string = "\n"
+        # Now we have the <body> element, let's get the text######################3
+
+        # Add the text for each element, using the get_text() function
+        string: str = "\n"
         for element in body.iter():
             string += get_text(element)
 
@@ -484,32 +579,49 @@ def TEI_to_text(pathArg="", index=-1):
 
         string = remove_invalid_characters(string)
 
-        work = E.work(
-            E.title(),
-            E.author(),
-            E.plaintext(string, reviewed="notreviewed"),
+        # Use my create_work function to get a set of elements
+        work: etree._Element = create_work(
+            to_add=string, title=titleString, author=authorString, path=str(path)
         )
+
+        # Add breakpoint here to test the create_work function's results
         worksProcessed.append(work)
 
-        return worksProcessed
+    return worksProcessed
+
+
+# Store the path to the file with the results here so its globally accessible
+results_file: str = "./atticus-study-results.xml"
+
+
+def open_results() -> etree._Element:
+    """
+    TODO TEST!
+    Returns the root element of the atticus-study-results.xml file"""
+    tree = etree.parse(results_file)
+    return tree.getroot()
 
 
 ###############################################33
-def ResultsFailureError(Exception):
-    """If one of the following five functions fails to execute, it
+class ResultsFailureError(Exception):
+    """If one of the following functions in this section fails to execute, it
     will raise this error to signal that the work information
     didn't successfully get added to the results XML."""
 
+    pass
 
 
 def validate_result(element: etree._Element) -> bool:
     """
+    TODO TEST!
     This is used in one of the following functions (create_work, create_plaintext, create_postagged, create_page)
-    in order to make sure the result is schema compliant"""
+    in order to make sure the result is schema compliant
+
+    @param element: An element other than <root>"""
     # Create this so we can validate our results against the schema
     from copy import deepcopy
 
-    local_template = xml_template
+    local_template: etree._Element = xml_template
 
     # If it's an element with a unique name like <work>, check if it's in the model
     matching_desc = [
@@ -537,7 +649,7 @@ def validate_result(element: etree._Element) -> bool:
     )
 
     # raise an unhandled exception if it doesn't validate
-    print(etree.tostring(local_template, pretty_print=True))
+    # print(etree.tostring(local_template, pretty_print=True))
     try:
         data_schema.assertValid(local_template)
         # Only returns True is the assertValid function doesn't raise an exception
@@ -547,41 +659,280 @@ def validate_result(element: etree._Element) -> bool:
         return False
 
 
-def create_work_plaintext(plaintext: str, title: str, author: str, parse_string: bool=False) -> etree._Element:
-    """This function returns a set of elements in the format defined in
+def create_work(to_add, title: str, author: str, path: str) -> etree._Element:
+    """
+    TODO TEST!
+    This function returns a set of elements in the format defined in
     results-schema.xsd in this repository. It takes the cleaned text for
     a file, which is generated in the TEI_to_text function
 
 
-    @param plaintext    : All the text in this work, as pulled from the Perseus DL
+    @param to_add       : Plaintext or tagged words, as pulled from the Perseus DL
     @param title        : The title of the work as given in the tei:titleStmt/tei:title
     @param author       : The author of the work as given in the tei:titleStmt/tei:author
-    @param parse_string : This makes it so this function can be reused. If true, this takes the plaintext string and treats it as a serialized XML document. See create_work_postagged() for more details."""
+    @param path         : The path which was used to find the original XML file ("**-lat*.xml")
+    """
+
+    content_type: str = ""
+
+    # Check whether to_add was a string
+    if type(to_add) == str:
+        content_type = "plaintext"
+
+    # If it isn't a string, the content is postagged
+    else:
+        content_type = "postagged"
 
     element = E.work(
         E.title(title),
         E.author(author),
-        E.content(string, type="plaintext"),
+        E.path(str(path)),
+        E.content(to_add, type=content_type),
         reviewed="UNREVIEWED",
+        timestamp=datetime.datetime.now().isoformat(),
     )
 
     if validate_result(element):
         return element
     else:
-        raise ResultsFailureError
+        raise ResultsFailureError(
+            f"Error! Element {etree.tostring(element)} could not be validated"
+        )
 
-def add_to_work(element_to_add: etree._Element, element_destination: etree._Element):
+
+def add_to_work(
+    element_to_add: etree._Element, element_destination: etree._Element
+) -> None:
     """
-    Corresponds to create_work_plaintext, but instead adds or replaces the plaintext. """
+    TODO TEST
+    Adds or replaces the contents of plaintext or pages
 
-    if [x for x in ]:
+    @param element_to_add      : A new <content> element
+    @param element_destination : An element with the <work> tag from an element tree
+    """
+    # make sure it matches the parameter
+    if element_destination.tag != "work":
+        raise ResultsFailureError(
+            "Error! Tried to add plaintext or postagged elements to an element without the tag 'work'"
+        )
+    if element_to_add.tag != "content":
+        raise ResultsFailureError(
+            "Error! Tried to add an element without the tag 'content' to a work"
+        )
+    # See whether we are replacing or adding. If this evaluates to true, there is already an element with the same tag and same attributes
+    existing_elements: list[etree._Element] = [
+        x
+        for x in element_destination.iterdescendants()
+        if (x.tag == element_to_add.tag) and (x.values() == element_to_add.values())
+    ]
+
+    if existing_elements:
+        element_destination.replace(existing_elements[0], element_to_add)
+    else:
+        element_destination.append(element_to_add)
+
+    if not validate_result(element_destination):
+        raise ResultsFailureError(
+            "Error! Element could not be added to destination. Recommend adding a breakpoint and debugging"
+        )
 
 
-def create_work_postagged(element: etree._Element):
+def create_page(text: str, data_file: etree._Element) -> etree._Element:
+    """
+    TODO TEST
+    Packs the results of the clean_text() function to a <page> element.
+    TODO NEEDS TO BE USED IN THE CLEAN_TEXT() FUNCTION TO SAVE DATA!!!!!
+
+    @param text     : The text from the page to be added
+    @param data_file: The file (currently atticus-study-results.xml) where the results will go
+    """
+
+    # Get list of all current page elements
+    id_final = 1
+
+    page_ids = data_file.xpath(".//page/@id")
+
+    # Get the biggest existing id, add 1, and then we have our ID
+    if page_ids:
+        id = (max([int(item) for item in page_ids])) + 1
+
+    return E.page(text, id=id_final)
 
 
+def __work_exists__(
+    path: str, data_file: etree._Element = open_results()
+) -> etree._Element:
+    """
+    TODO TEST!
+    Checks if a work for a parsed file already exists based on the path. This is a helper function for work_exists(), which takes an element instead of a path and tells whether it exists. If successful, returns the Element that has the same path
 
-#########################################################3
+    @param path      : The path used to find the original XML file in the create_work() function, in the format **.lat*.xml
+    @param data_file : The results file where all the results end up. The recommended value is always the results of the open_results() function for consistency
+    """
+
+    # Tested with a basic file in the interpreter, algorithm seems to work
+    xpath_expr = f"//work/path[text()='{path}']"
+    sub_work = data_file.xpath(xpath_expr)
+    sub_work = sub_work[0]
+    return sub_work.getparent()
+
+
+def work_exists(element: etree._Element, data_file: etree._Element = open_results()):
+    """
+    Checks whether a work element already has a previous version present. If successful, it returns the
+
+    @param element   : A <work> element to be checked
+    @param data_file : The results file where all the results end up. The recommended value is always the results of the open_results() function for consistency
+    """
+
+    # Make sure the element is a <work> element
+    if element.tag == "work":
+        # Set the annotation to string so we can catch any errors here
+        path: str = element.xpath("./path/text()")[
+            0
+        ]  # added the [0] because it returns a list of 1
+        existing_work = __work_exists__(path, data_file)
+
+        if existing_work is not None:
+            return existing_work
+        else:
+            return None
+    else:
+        raise ResultsFailureError(
+            f"Error! The element {etree.tostring(element)} is not a valid <work> element"
+        )
+
+
+def element_in_tree():  # -> bool:
+    """
+    TODO"""
+    pass
+
+
+def remove_duplicates(data: etree._Element):
+    """
+    TODO
+    This function removes works when more than one have the same author/title combo.
+    Priority is given to the newest element.
+
+    @param data: the <root> element of a data to be exported"""
+
+
+def add_work(element: etree._Element, data_file: etree._Element) -> None:
+    """
+    TODO TEST!
+    Adds the work to the data_file. If the work already exists, replace it
+
+    @param element   : A <work> element to be output to the data file
+    @param data_file : The <root> node of the ElementTree from the data file returned from open_results()
+    """
+
+    # Don't need to check whether the element passed to this function is actually a <work> element, because work_exists will raise an error if it isn't
+
+    existing_work = work_exists(element, data_file)
+    if existing_work is not None:
+        parent: etree._Element = existing_work.getparent()
+        parent.replace(existing_work, element)
+    else:
+        data_file.append(element)
+
+
+def automatic_validation() -> None:
+    """
+    Docstring for automatic_validation
+
+    This function goes through the results file specified in open_results() and does tests to validate each work.
+
+    Tests:
+    NEEDSDOC"""
+
+    data_file = open_results()
+
+    # Size of the sampled strings minus 1
+    test_size = 4
+
+    schema: etree.XMLSchema = data_schema
+
+    schema_validated: bool = schema.validate(data_file.getroottree())
+
+    if schema_validated:
+        # Works are direct children of the root, therefore we're able to just loop through the Element as an iterable
+        for work in data_file:
+            path = work.find("path").text
+            save_output(path, "a")
+            with open(path, "r", encoding="utf-8") as file:
+                # Do our tests here.
+                content = work.xpath('content[@type="plaintext"]')
+                content = content[0]
+                content = content.text
+
+                tokenized = content.split(" ")
+
+                source: str = str(file.read())
+                source = re.sub("\t", "", source)
+
+                source = remove_invalid_characters(source)
+
+                save_output(
+                    str(work.xpath("/path/text()")) + "\n" + ("*" * 25) + "\n\n", "a"
+                )
+
+                for i in range(0, 99):
+                    index = random.randrange(0, len(tokenized))
+                    final_string = ""
+                    try:
+                        final_string = " ".join(tokenized[index : (index + 4)])
+                    except IndexError:
+                        final_string = " ".join(tokenized[index:])
+                    if not final_string in source:
+                        save_output(final_string, "a")
+    else:
+        save_output("Error! Could not validate results file\n\n", "a")
+
+
+# THIS FUNCTION MAY GET NIXED!
+def test_text(plaintext: str, validate_against: str) -> None:
+    """
+    Docstring for test_text
+
+    NEEDSDOC
+    :param plaintext: Description
+    :type plaintext: str
+    :param validate_against: Description
+    :type validate_against: str
+
+
+    """
+
+    # This is the stuff removed from the final result:
+    """
+    # Remove numeric
+    text = re.sub("[0-9]", "", text)
+
+    # Look for hyphens followed by a line break and zero or
+    # more spaces/line breaks. After identifying these, all matches.
+    text = re.sub("- *\n[\n ]*", "", text)
+
+    # Remove gaps between words bigger than a space
+    text = re.sub("[\n ]+", " ", text)
+    """
+
+    # Number of times to check
+    trials = 100
+
+    # Length to check
+
+    for i in range(0, trials):
+        pass
+
+    # validate_against = re.sub("\t", "", validate_against)
+
+    # validate_against = remove_invalid_characters(validate_against)
+
+    pass
+
+
+#########################################################
 
 
 # QUESTIONS TO ANSWER:
@@ -597,8 +948,14 @@ if __name__ == "__main__":
     # Debug
     # print(f"Printing the xml template:\n{prettyprint(xml_template)}")
 
-    xml_test = etree.fromstring(
-        "<content><w>stuff</w><page>and more</page><w>things</w></content>"
-    )
+    perseus_to_file(pathArg="", index=[0, 22])
 
-    print(validate_result(xml_test))
+    """
+    data_file = open_results()
+
+    schema: etree.XMLSchema = data_schema
+
+    schema_validated: bool = schema.assertValid(data_file.getroottree())
+
+    automatic_validation()
+    """

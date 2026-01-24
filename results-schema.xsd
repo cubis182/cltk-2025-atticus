@@ -12,6 +12,7 @@
                             <!-- Get the title from
                             tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author-->
                             <xs:element name="author" type="xs:string" minOccurs="1"></xs:element>
+                            <xs:element name="path" type="xs:string" minOccurs="1"/>
                             <xs:element name="content" minOccurs="1" maxOccurs="unbounded">
                                 <xs:complexType mixed="true">
                                     <xs:sequence minOccurs="0" maxOccurs="unbounded">
@@ -30,6 +31,7 @@
                             <xs:element name="pages" minOccurs="0" maxOccurs="unbounded"/>
                         </xs:sequence>
                         <xs:attribute ref="reviewed" use="required"/>
+                        <xs:attribute name="timestamp" type="xs:dateTime"/>
                     </xs:complexType>
                 </xs:element>
             </xs:sequence>
