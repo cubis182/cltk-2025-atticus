@@ -139,6 +139,13 @@ consuetudinem relabuntur.
 2026-01-24T15:48:52.058991
 rerum quies.
  Omnium quidem
+
+
+
+
+
+
+ 
 2026-01-24T15:53:22.421158
 C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\phi2331\phi012\phi2331.phi012.perseus-lat2.xml
 2026-01-24T15:53:22.427045

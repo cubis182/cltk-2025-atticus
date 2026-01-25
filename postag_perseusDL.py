@@ -938,6 +938,33 @@ def test_text(plaintext: str, validate_against: str) -> None:
 #########################################################
 
 
+def identify_duplicates_perseus(paths: list = get_paths()) -> list:
+    """
+    Docstring for identify_duplicates_perseus
+
+    :param paths: A list of paths from the get_paths() function
+    :type paths: list
+    :return: Description
+    :rtype: list[Any]
+    """
+
+    """
+    
+    If more than one path has the same directory, pick the first"""
+
+    pass
+
+
+def get_paths_no_file() -> list[str]:
+    ret_value = []
+    for p in get_paths():
+        sP = str(p)
+        sP = sP.split("\\")
+        sP = sP[0:-1]
+        ret_value.append("\\".join(sP))
+    return ret_value
+
+
 # QUESTIONS TO ANSWER:
 # How to save the results?
 #   As XML?
@@ -953,6 +980,7 @@ if __name__ == "__main__":
 
     # perseus_to_file(pathArg="", index=[0, 22])
 
+    """
     data_file = open_results()
 
     schema: etree.XMLSchema = data_schema
@@ -960,3 +988,10 @@ if __name__ == "__main__":
     schema_validated: bool = schema.assertValid(data_file.getroottree())
 
     automatic_validation()
+    """
+
+    my_list = get_paths_no_file()
+    indices = [index for index, value in enumerate(my_list) if my_list.count(value) > 1]
+
+    for i in indices:
+        print(my_list[i])
