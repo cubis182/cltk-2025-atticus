@@ -233,6 +233,11 @@ def remove_invalid_characters(text: str) -> str:
     # though
 
     # Add a newline character after each sentence for easy reading.
+    # The regex doesn't count occurences of common epistolary abbreviations and abbreviated Praenomina.
+    split = re.split(
+        "(?<!( Prid| prid| Kal| kal| Non| Id| a| d| Ian| Febr| Mart| Apr| Mai| Iun| Quint| Sext| Sept| Oct| Nov| Dec| Narib| Luc| Agr| Ap| A| K| D| F| C| Cn| L| Mam| M'| M| N| Oct|Opet| Post| Pro| P| Q| Sert| Ser| Sex| S| St| Ti| T| V| Vol| Vop))\\.",
+        text,
+    )
     split = text.split(".")
     text = ".\n".join(split)
 
@@ -938,7 +943,7 @@ def test_text(plaintext: str, validate_against: str) -> None:
 #########################################################
 
 
-def identify_duplicates_perseus(paths: list = get_paths()) -> list:
+def identify_duplicates_perseus(paths: list = get_paths()):  # -> list:
     """
     Docstring for identify_duplicates_perseus
 
@@ -980,7 +985,6 @@ if __name__ == "__main__":
 
     # perseus_to_file(pathArg="", index=[0, 22])
 
-    """
     data_file = open_results()
 
     schema: etree.XMLSchema = data_schema
@@ -988,10 +992,12 @@ if __name__ == "__main__":
     schema_validated: bool = schema.assertValid(data_file.getroottree())
 
     automatic_validation()
-    """
 
+    """
+    CODE TO TEST WHETHER THERE ARE ANY DUPLICATES
     my_list = get_paths_no_file()
     indices = [index for index, value in enumerate(my_list) if my_list.count(value) > 1]
 
     for i in indices:
         print(my_list[i])
+    """
