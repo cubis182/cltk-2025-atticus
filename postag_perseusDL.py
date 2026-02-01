@@ -16,6 +16,10 @@ Description:
 
     Marcus Tullius Cicero, and Shackleton Bailey, David R.. Fasc 34 Epistulae ad Atticum: Vol. I. Libri I-VIII, Berlin, Boston: B. G. Teubner, 1987. https://doi.org/10.1515/9783110953831
 
+    NOTE HERE ARE SOME ONGOING ISSUES:
+    The '/' is used to signal an apex in Cicero's De Re Publica, so "A/strologorum si/gna"
+
+    daturu's es cenam
 
 License: MIT License
 Contact: matthew_dehass@yahoo.com
@@ -50,7 +54,14 @@ Solutions required:
 import os
 import pdfplumber
 import re
+import regex
 import datetime
+
+from lxml import etree  # type: ignore
+from lxml.builder import E
+from pathlib import Path
+from random import choice
+import io
 
 Y_DENSITY = 8
 DEBUG_DIR = "C:/Users/T470s/Documents/GitHub/cltk-2025-atticus"
@@ -60,6 +71,7 @@ dir = "C:/Users/T470s/Documents/Letters to Atticus/"
 
 # Testing the pdf cleaning functions on Books 1-8 first; here is the PDF
 Vol1 = "BOOKS 1-8 Ciceronis, M_ Tulli, Epistulae Ad Atticum_ Vol_ I, Libri I - -- [9783110953831 - Epistulae ad Atticum] Epistulae ad -- Bibliotheca scriptorum.pdf"
+Vol2 = "BOOKS 9-16 Ciceronis, M_Tulli, epistulae ad Atticum__ Vol_II, Libri -- [9783110953824 - Epistulae ad Atticum] Epistulae ad -- Bibliotheca scriptorum Graecorum et -- 9783110953824 -- 6452b88664ff783678ce.pdf"
 
 
 """
@@ -77,8 +89,6 @@ to do more tests.
 
 """
 
-pdfV1 = pdfplumber.open(str(dir + Vol1))
-
 
 def save_output(text: str, method: str = "w") -> None:
     """
@@ -87,7 +97,7 @@ def save_output(text: str, method: str = "w") -> None:
     the top of the file."""
     with open((DEBUG_DIR + "./letters-tests.txt"), method, encoding="utf-8") as output:
         output.write(datetime.datetime.now().isoformat() + "\n")
-        output.write(text + "\n")
+        output.write(str(text) + "\n")
         output.close()
 
 
@@ -106,6 +116,8 @@ def test_formatting(index: int = -1, y_density=Y_DENSITY):
     If no index is given, a random one is selected. Y_Density tells
     the extract_text() function how much space to put between lines.
     """
+    pdfV1 = pdfplumber.open(str(dir + Vol1))
+    pdfV2 = pdfplumber.open(str(dir + Vol2))
 
     final_index: int = index
     if index == -1:
@@ -122,6 +134,8 @@ def rand_letter() -> int:
     NOT FOR USE IN FINAL PROGRAM
     Gives the number of a random letter in the test PDF
     """
+    pdfV1 = pdfplumber.open(str(dir + Vol1))
+    pdfV2 = pdfplumber.open(str(dir + Vol2))
     return random.randint(0, len(pdfV1.pages))
 
 
@@ -170,7 +184,7 @@ def clean_text(page):
             index_footer = n_line
             break
 
-    print(f"clean_text(): Debug message: index_footer is equal to {index_footer}")
+    # print(f"clean_text(): Debug message: index_footer is equal to {index_footer}")
 
     try:
         del stichic_text[index_footer:]
@@ -189,7 +203,7 @@ def clean_text(page):
 
         # print(line)
         if not line.isspace():
-            print(f"The line to be deleted is: {line}")
+            # print(f"The line to be deleted is: {line}")
             del stichic_text[n_line]
             break
 
@@ -234,14 +248,85 @@ def remove_invalid_characters(text: str) -> str:
 
     # Add a newline character after each sentence for easy reading.
     # The regex doesn't count occurences of common epistolary abbreviations and abbreviated Praenomina.
-    split = re.split(
-        "(?<!( Prid| prid| Kal| kal| Non| Id| a| d| Ian| Febr| Mart| Apr| Mai| Iun| Quint| Sext| Sept| Oct| Nov| Dec| Narib| Luc| Agr| Ap| A| K| D| F| C| Cn| L| Mam| M'| M| N| Oct|Opet| Post| Pro| P| Q| Sert| Ser| Sex| S| St| Ti| T| V| Vol| Vop))\\.",
+    # NOTE need to use the regex module instead of re (installed by -m pip install regex).
+    # NOTE    The reason for using regex is because the lookbehind assertion is not a fixed width
+    split = regex.split(
+        "(?<!Prid|prid|Kal|kal|Non|Id|a|d|Ian|Febr|Mart|Apr|Mai|Iun|Quint|Sext|Sept|Oct|Nov|Dec|Nrib|Luc|Agr|Ap|A|K|D|F|C|Cn|L|Mam|M'|M|N|Oct|Opet|Post|Pro|P|Q|Sert|Ser|Sex|S|St|Ti|T|Vol|Vop)\\.",
         text,
     )
-    split = text.split(".")
     text = ".\n".join(split)
 
     return text + "\n\n"
+
+
+def validate_page(page: str) -> bool:
+    """
+    TODO ADD THIS TO THE process_pages_att() FUNCTION!!!!!!!
+    Docstring for validate_page
+    Currently, some pages are going through without any text. Need to flag these in the
+    results file.
+
+    :param page: The string extracted from the PDF
+    :type page: str
+    :return: Description
+    :rtype: bool
+    """
+    return bool(page)
+
+
+# Index of the first real page in each PDF
+# This is important for the following function, process_pages_att()
+keep_Vol1 = 18
+keep_Vol2 = 4
+
+
+def process_pages_att() -> etree._Element:
+    """
+    Docstring for process_pages
+    This function is for the letters to Atticus PDFs only.
+    It opens the files, processes each page, and adds them
+    to an element.
+    """
+
+    # Open the PDFs
+    with pdfplumber.open(str(dir + Vol1)) as pdfV1:
+        with pdfplumber.open(str(dir + Vol2)) as pdfV2:
+            # Get a list of all the pages
+            pages = pdfV1.pages[keep_Vol1:] + pdfV2.pages[keep_Vol2:]
+
+            # list comprehension with clean_text()
+            str_pages = [clean_text(p) for p in pages]
+
+            tree = etree.Element("pages")
+
+            for p in str_pages:
+                # create a page element (any arbitrary element can fit in <content/>)
+                p_element: etree._Element = etree.Element("page")
+                # Add the page's processed text as the element's content
+                p_element.text = p
+
+                # If the page doesn't validate, that currently means it's empty. i
+                # Add an attribute that identifies it as empty
+                if not validate_page:
+                    p_element.set("flag", "empty")
+
+                # Add the final page element to the content we are going to add
+                tree.append(p_element)
+
+            final_work = create_work(
+                tree, "Letters to Atticus", "Marcus Tullius Cicero", "", pages=True
+            )
+            return final_work
+
+
+def save_pages_att(work: etree._Element) -> None:
+    """
+    This function takes the results of process_pages_att() and saves it to the results file
+    (see the results_file var below)
+
+    :param work: An element tree returned from process_pages_att()
+    :type work: etree._Element
+    """
 
 
 # TODO THESE ARE LINES OF CODE FOR DEBUGGING I NEED TO CLEAN UP
@@ -283,12 +368,6 @@ def prettyprint(element, **kwargs):
     xml = etree.tostring(element, pretty_print=True, **kwargs)
     print(xml.decode(), end="")
 
-
-from lxml import etree  # type: ignore
-from lxml.builder import E
-from pathlib import Path
-from random import choice
-import io
 
 # Add the directory containing your module to the Python path
 import os
@@ -337,6 +416,9 @@ inval_tags = [
     "head",
     "speaker",
     "sic",
+    "bibl",
+    "ex",
+    "expan",
     #    "corr",
     # "choice",
     "{http://www.tei-c.org/ns/1.0}note",
@@ -344,9 +426,14 @@ inval_tags = [
     "{http://www.tei-c.org/ns/1.0}head",
     "{http://www.tei-c.org/ns/1.0}speaker",
     "{http://www.tei-c.org/ns/1.0}sic",
+    "{http://www.tei-c.org/ns/1.0}bibl",
+    "{http://www.tei-c.org/ns/1.0}ex",  # When an abbr / expan is given, let's go with the abbreviated form. The reason is given in a comment just under this
     #    "{http://www.tei-c.org/ns/1.0}corr",
     # "{http://www.tei-c.org/ns/1.0}choice",
 ]
+
+# NOTE For abbreviations, their usage in the Perseus DL is inconsistent. Sometimes <abbr/> surrounds both the abbreviation and the expansion. Other times, the abbreviation is next to the expansion.
+# However, the expansions are consistent, so we'll just get rid of those. I would prefer the expanded forms, but this is cleaner for now.
 
 
 def is_valid_tag(element: etree._Element) -> int:
@@ -418,9 +505,8 @@ def perseus_to_file(pathArg, index) -> None:
     TODO TEST!
     This function wraps around the TEI_to_text file, adding each file to the output data file
 
-    NEEDSDOC
-    @param pathArg : An optional string or list of strings which gives the specific path(s) you want to parse. Type "rand" if you want a random one
-    @param index   : An optional integer index of the location in the file list of the path. Can also be a sequence of integers
+    @param pathArg : A list of strings which gives the specific path(s) you want to parse. Type "rand" if you want a random one, or pass "" to NEEDSDOC
+    @param index   : An integer index of the location in the file list of the path. Can also be a sequence of integers. Enter -1 for default behavior NEEDSDOC
     """
 
     # File the results will go in.
@@ -432,6 +518,17 @@ def perseus_to_file(pathArg, index) -> None:
         add_work(work, data_file)
 
     # Finally, add the updated results
+    write_results(data_file=data_file)
+
+
+def write_results(data_file: etree._Element) -> None:
+    """
+    NEEDSDOC
+    Docstring for write_results
+
+    :param data_file: Description
+    :type data_file: etree._Element
+    """
     data_file.getroottree().write(results_file, encoding="utf-8")
 
 
@@ -456,6 +553,7 @@ def get_title_auth_body(tree: etree._Element) -> dict:
     expression: str = "//body"
 
     # XPath expression for the title
+    # TODO Debug this title creator; it didn't work for Pro roscio
     title: str = "/teiHeader/fileDesc/titleStmt/title/text()"
     titleString: str = ""
 
@@ -465,7 +563,10 @@ def get_title_auth_body(tree: etree._Element) -> dict:
 
     # However, if there is a namespace with the TEI URI (which is given in the 'tei' variable above), we need a tei namespace declared
     nsmap: list = list(tree.nsmap.values())
-    is_TEI: bool = tei["tei"] == nsmap[0]
+    try:
+        is_TEI: bool = tei["tei"] == nsmap[0]
+    except IndexError:
+        is_TEI: bool = False
 
     body = __run_xpath(expression, is_TEI, tree, tei)
 
@@ -508,7 +609,7 @@ def __run_xpath(expr: str, is_tei: bool, tree: etree._Element, tei: dict):
         return tree.xpath(expr)
 
 
-def TEI_to_text(pathArg="", index=-1) -> list[etree._Element]:
+def TEI_to_text(pathArg, index) -> list[etree._Element]:
     """
     This function returns a plaintext version of the TEI XML files in the
     Perseus Digital Library. The function currently assumes the path to the
@@ -516,8 +617,8 @@ def TEI_to_text(pathArg="", index=-1) -> list[etree._Element]:
     C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/perseus-debug.txt.
     The function can work with no namespace or TEI.
 
-    @param pathArg : An optional string or list of strings which gives the specific path(s) you want to parse. Type "rand" if you want a random one
-    @param index   : An optional integer index of the location in the file list of the path. Can also be a sequence of integers
+    @param pathArg : A list of strings which gives the specific path(s) you want to parse. Type "rand" if you want a random one, or pass "" to NEEDSDOC
+    @param index   : An integer index of the location in the file list of the path. Can also be a sequence of integers. Enter -1 for default behavior NEEDSDOC
     """
 
     # Get the Perseus DL paths
@@ -667,7 +768,9 @@ def validate_result(element: etree._Element) -> bool:
         return False
 
 
-def create_work(to_add, title: str, author: str, path: str) -> etree._Element:
+def create_work(
+    to_add, title: str, author: str, path: str, pages=False
+) -> etree._Element:
     """
     TODO TEST!
     This function returns a set of elements in the format defined in
@@ -679,6 +782,7 @@ def create_work(to_add, title: str, author: str, path: str) -> etree._Element:
     @param title        : The title of the work as given in the tei:titleStmt/tei:title
     @param author       : The author of the work as given in the tei:titleStmt/tei:author
     @param path         : The path which was used to find the original XML file ("**-lat*.xml")
+    @param pages        : NEEDSDOC
     """
 
     content_type: str = ""
@@ -686,15 +790,20 @@ def create_work(to_add, title: str, author: str, path: str) -> etree._Element:
     # Check whether to_add was a string
     if type(to_add) == str:
         content_type = "plaintext"
+    elif pages:
+        content_type = "pages"
 
     # If it isn't a string, the content is postagged
     else:
         content_type = "postagged"
 
+    path = str(path)
+    path = path.replace("\\", "/")
+
     element = E.work(
         E.title(title),
         E.author(author),
-        E.path(str(path)),
+        E.path(path),
         E.content(to_add, type=content_type),
         reviewed="UNREVIEWED",
         timestamp=datetime.datetime.now().isoformat(),
@@ -745,43 +854,26 @@ def add_to_work(
         )
 
 
-def create_page(text: str, data_file: etree._Element) -> etree._Element:
-    """
-    TODO TEST
-    Packs the results of the clean_text() function to a <page> element.
-    TODO NEEDS TO BE USED IN THE CLEAN_TEXT() FUNCTION TO SAVE DATA!!!!!
-
-    @param text     : The text from the page to be added
-    @param data_file: The file (currently atticus-study-results.xml) where the results will go
-    """
-
-    # Get list of all current page elements
-    id_final = 1
-
-    page_ids = data_file.xpath(".//page/@id")
-
-    # Get the biggest existing id, add 1, and then we have our ID
-    if page_ids:
-        id = (max([int(item) for item in page_ids])) + 1
-
-    return E.page(text, id=id_final)
-
-
-def __work_exists__(
-    path: str, data_file: etree._Element = open_results()
-) -> etree._Element:
+def __work_exists__(path: str, data_file: etree._Element = open_results()):
     """
     TODO TEST!
+
+    Passed tests for 3 works
+    THIS INTERNAL FUNCTION IS FOR USE IN work_exists() ONLY!
     Checks if a work for a parsed file already exists based on the path. This is a helper function for work_exists(), which takes an element instead of a path and tells whether it exists. If successful, returns the Element that has the same path
 
     @param path      : The path used to find the original XML file in the create_work() function, in the format **.lat*.xml
     @param data_file : The results file where all the results end up. The recommended value is always the results of the open_results() function for consistency
+    @return : either an etree._Element or None, depending on whether the work exists.
     """
 
     # Tested with a basic file in the interpreter, algorithm seems to work
     xpath_expr = f"//work/path[text()='{path}']"
     sub_work = data_file.xpath(xpath_expr)
-    sub_work = sub_work[0]
+    try:
+        sub_work = sub_work[0]
+    except IndexError:
+        return None
     return sub_work.getparent()
 
 
@@ -978,12 +1070,122 @@ def get_paths_no_file() -> list[str]:
 #   XML might be ideal, because I needed a structured way to look at the data (divided into texts, which are further divided into words)
 #   TEI XML would be
 
+##############CLASSICAL LANGUAGES TOOLKIT#########################
+
+from cltk.nlp import NLP
+import cltk.core.data_types as types
+import cltk.morphosyntax.conll as conll
+
+
+def process_text(text: str) -> types.Doc:
+    f"""
+    Docstring for process_text
+    Processes the Perseus DL texts and the Letters to Atticus with the CLTK
+    
+    :param text: The plaintext for a work, as retrieved from the <content type="plaintext"/> element in the {results_file} file
+    :type text: str 
+    :return: Description
+    :rtype: NLP from the CLTK for a single work
+    """
+    nlp = NLP("lati1261", backend="stanza")
+    doc = nlp.analyze(text)
+    return doc
+
+
+def doc_to_element(tagged: types.Doc) -> etree._Element:
+    """
+    Docstring for doc_to_element
+    This function takes the sentence and word classes from an NLP and placed them in
+    <sentence> and <word> elements, with the relevant information for each word
+    being placed in attributes.
+    SUCCESSFULLY TESTED
+
+    :param tagged: An NLP which is the parsed form of the provided work
+    :type tagged: NLP
+    :return: Returns an element tree of the type <content type="postagged"/>, containing sentence and word nodes with the information
+    :rtype: etree._Element
+    """
+    content = etree.Element("content", type="postagged")
+
+    for s in tagged.sentences:
+        sent = etree.Element("sentence")
+        for word in s.words:
+            form = word.string
+
+            w_elem = etree.Element("word")
+
+            w_elem.text = form
+
+            for item in word.upos:
+                w_elem.set(str(item[0]), str(item[1]))
+
+            try:
+                for item in word.features.features:
+                    w_elem.set(str(item.key), str(item.value))
+            except AttributeError:
+                pass
+
+            sent.append(w_elem)
+        content.append(sent)
+    return content
+
+
+def postag_validation(tagged: NLP) -> None:
+    """
+    Docstring for postag_validation
+    Throw an error if the postagged text doesn't meet standards.
+    Ideally, print offending token(s) to console.
+
+    :param tagged: A cltk.NLP with the parsed text
+    :type tagged: NLP
+    """
+    pass
+
+
+def process_results() -> None:
+    f"""
+    Docstring for process_results
+    This function takes the results file, {results_file}, and adds a postagged content element for each one
+    """
+
+    # Get every work in the results page
+    results_xml: etree._Element = open_results()
+    for work in results_xml:
+        content = work.find("./content[@type='plaintext']")
+
+        doc: types.Doc
+
+        # Get the CLTK Doc. If there is no content, continue to the next iteration of the loop
+        try:
+            doc = process_text(content.text)
+        except AttributeError:
+            continue
+
+        # Put the text in XML format
+        postagged: etree._Element = doc_to_element(doc)
+
+        add_to_work(postagged, work)
+
+    write_results(results_xml)
+
+
+##################################################################
+
 if __name__ == "__main__":
     # print(f"Current file path: {Path(__file__).parents[0]}\n")
     # Debug
     # print(f"Printing the xml template:\n{prettyprint(xml_template)}")
 
-    # perseus_to_file(pathArg="", index=[0, 22])
+    # save_output(etree.tostring(process_pages_att(), pretty_print=True).decode("utf-8"))
+
+    # print(etree.tostring(content))
+
+    process_results()
+
+    """perseus_to_file(
+        pathArg="rand",
+        index=-1,
+    )
 
     data_file = open_results()
 
@@ -991,7 +1193,7 @@ if __name__ == "__main__":
 
     schema_validated: bool = schema.assertValid(data_file.getroottree())
 
-    automatic_validation()
+    automatic_validation()"""
 
     """
     CODE TO TEST WHETHER THERE ARE ANY DUPLICATES

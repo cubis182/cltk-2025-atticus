@@ -9,10 +9,12 @@ Made for Python 3.13.7
 
 """
 
+sys.path.append("C:/Users/T470s/Documents/GitHub/cltk-2025-atticus")
+from postag_perseusDL import *
+
 from cltk.nlp import NLP
 import cltk.core.data_types as types
 import cltk.morphosyntax.conll as conll
-from postag_perseusDL import *
 from pathlib import Path
 
 import os
@@ -22,11 +24,10 @@ os.chdir(Path(__file__).parents[0])
 
 from importlib import *
 import datetime
-from postag_perseusDL import *
 import pdfplumber
 
 
-def conll_convert(doc: types.Doc) -> str:
+def conll_convert(doc) -> str:
     """
     conll_convert(doc: cltk.Doc)
 
@@ -77,10 +78,7 @@ def conll_convert(doc: types.Doc) -> str:
 # doc = nlp.analyze(text='ego sum magister linguae latinae.')
 
 import cltk.morphosyntax.conll as conll
-import sys
 
-sys.path.append("C:/Users/T470s/Documents/GitHub/cltk-2025-atticus")
-import postag_perseusDL
 
 """
 text_as_string = ""
@@ -96,6 +94,9 @@ just above
 
 # parse.save_output(text_as_string)
 print(type(TEI_to_text(pathArg="rand")))
+
+if __name__ == "main":
+    pass
 
 """
 Some pathlib experiments

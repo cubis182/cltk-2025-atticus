@@ -23,6 +23,7 @@
                                             <xs:restriction base="xs:string">
                                                 <xs:enumeration value="plaintext"></xs:enumeration>
                                                 <xs:enumeration value="postagged"></xs:enumeration>
+												<xs:enumeration value="pages"></xs:enumeration>
                                             </xs:restriction>
                                         </xs:simpleType>
                                     </xs:attribute>
