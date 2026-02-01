@@ -529,6 +529,13 @@ def write_results(data_file: etree._Element) -> None:
     :param data_file: Description
     :type data_file: etree._Element
     """
+    # Save the old one to a backup
+    old_tree = open_results()
+    old_tree.getroottree().write(
+        "./results_backup_" + datetime.datetime.now().isoformat() + ".xml",
+        encoding="utf-8",
+    )
+
     data_file.getroottree().write(results_file, encoding="utf-8")
 
 
@@ -730,19 +737,18 @@ def validate_result(element: etree._Element) -> bool:
     # Create this so we can validate our results against the schema
     from copy import deepcopy
 
-    local_template: etree._Element = xml_template
+    local_template: etree._Element = deepcopy(xml_template)
 
     # If it's an element with a unique name like <work>, check if it's in the model
-    matching_desc = [
-        x for x in local_template.iterdescendants() if x.tag == element.tag
-    ]
+    tag = element.tag
+
+    matching_desc = [x for x in local_template.iterdescendants() if x.tag == tag]
 
     # Otherwise, check the type
     try:
-        element.get("type")
-        matching_desc = [
-            x for x in matching_desc if x.get("type") == element.get("type")
-        ]
+        e_type = element.get("type")
+        if e_type is not None:
+            matching_desc = [x for x in matching_desc if x.get("type") == e_type]
     except IndexError:
         pass
 
@@ -821,8 +827,10 @@ def add_to_work(
     element_to_add: etree._Element, element_destination: etree._Element
 ) -> None:
     """
-    TODO TEST
-    Adds or replaces the contents of plaintext or pages
+    Adds or replaces the contents of plaintext or pages.
+    NOTE: This doesn't modify the original work in some cases.
+    If the changes aren't propagating, use the add_work() function
+    after this
 
     @param element_to_add      : A new <content> element
     @param element_destination : An element with the <work> tag from an element tree
@@ -1150,7 +1158,8 @@ def process_results() -> None:
 
     # Get every work in the results page
     results_xml: etree._Element = open_results()
-    for work in results_xml:
+
+    for work in open_results():
         content = work.find("./content[@type='plaintext']")
 
         doc: types.Doc
@@ -1164,9 +1173,13 @@ def process_results() -> None:
         # Put the text in XML format
         postagged: etree._Element = doc_to_element(doc)
 
+        # save_output("Iteration: " + etree.tostring(results_xml).decode("utf-8") + "\n" * 8)
         add_to_work(postagged, work)
+        # save_output("Work: " + etree.tostring(work).decode("utf-8") + "\n" * 8)
+        add_work(work, results_xml)
+        write_results(results_xml)
 
-    write_results(results_xml)
+    # write_results(results_xml)
 
 
 ##################################################################
