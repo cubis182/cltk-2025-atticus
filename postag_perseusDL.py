@@ -530,11 +530,12 @@ def write_results(data_file: etree._Element) -> None:
     :type data_file: etree._Element
     """
     # Save the old one to a backup
-    old_tree = open_results()
-    old_tree.getroottree().write(
-        "./results_backup_" + datetime.datetime.now().isoformat() + ".xml",
-        encoding="utf-8",
-    )
+    # old_tree = open_results()
+    # filename = "results_backup_" + datetime.datetime.now().isoformat() + ".xml"
+    # old_tree.getroottree().write(
+    #    filename,
+    #    encoding="utf-8",
+    # )
 
     data_file.getroottree().write(results_file, encoding="utf-8")
 
@@ -1118,18 +1119,33 @@ def doc_to_element(tagged: types.Doc) -> etree._Element:
     for s in tagged.sentences:
         sent = etree.Element("sentence")
         for word in s.words:
-            form = word.string
+            s_form = word.string
 
             w_elem = etree.Element("word")
 
-            w_elem.text = form
+            form = etree.Element("form")
+            form.text = s_form
+
+            w_elem.append(form)
 
             for item in word.upos:
-                w_elem.set(str(item[0]), str(item[1]))
+                # w_elem.set(str(item[0]), str(item[1])) NO LONGER USING ATTRIBUTES, BUT ELEMENTS
+
+                # Add a child element for each POS feature.
+                # The feature name is the element name, and the value is the element text
+                child = etree.Element(str(item[0]))
+                child.text = str(item[1])
+                w_elem.append(child)
 
             try:
                 for item in word.features.features:
-                    w_elem.set(str(item.key), str(item.value))
+                    # Add a child element for each feature.
+                    # The feature name is the element name, and the value is the element text
+                    child = etree.Element(str(item.key))
+                    child.text = str(item.value)
+                    w_elem.append(child)
+            # Some words don't have features if indeclinable.
+            # If so, it'll throw an attribute error when we try to access features. In that case, just skip
             except AttributeError:
                 pass
 
