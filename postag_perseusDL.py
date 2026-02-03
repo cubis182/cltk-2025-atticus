@@ -1101,7 +1101,7 @@ def process_text(text: str) -> types.Doc:
     return doc
 
 
-def doc_to_element(tagged: types.Doc) -> etree._Element:
+def doc_to_element(tagged: types.Doc, title: str, path: str) -> etree._Element:
     """
     Docstring for doc_to_element
     This function takes the sentence and word classes from an NLP and placed them in
@@ -1111,18 +1111,33 @@ def doc_to_element(tagged: types.Doc) -> etree._Element:
 
     :param tagged: An NLP which is the parsed form of the provided work
     :type tagged: NLP
+    :param title: The title of the work
+    :type title: str
+    :param path: The path to the original Perseus DL TEI XML file
+    :type path: str
     :return: Returns an element tree of the type <content type="postagged"/>, containing sentence and word nodes with the information
     :rtype: etree._Element
     """
     content = etree.Element("content", type="postagged")
 
-    for s in tagged.sentences:
+    # Get all the sentences
+    sents = tagged.sentences
+
+    for s in sents:
         sent = etree.Element("sentence")
+        # Add an attribute with the sentence number
+        n_sent = sents.index(s)
+        sent.set("n", str(n_sent))
         for word in s.words:
             s_form = word.string
 
             w_elem = etree.Element("word")
 
+            # Add the title and path
+            w_elem.append(E.title(title))
+            w_elem.append(E.path(path))
+
+            # Add the word form
             form = etree.Element("form")
             form.text = s_form
 
@@ -1186,8 +1201,15 @@ def process_results() -> None:
         except AttributeError:
             continue
 
+        # Get the title and path for each work to save to each word.
+        # This is technically redundant, but makes importing into R easier
+        e_title = work.find("./title")
+        e_path = work.find("./path")
+
         # Put the text in XML format
-        postagged: etree._Element = doc_to_element(doc)
+        postagged: etree._Element = doc_to_element(
+            doc, title=e_title.text, path=e_path.text
+        )
 
         # save_output("Iteration: " + etree.tostring(results_xml).decode("utf-8") + "\n" * 8)
         add_to_work(postagged, work)
