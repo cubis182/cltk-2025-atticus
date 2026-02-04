@@ -63,7 +63,8 @@ from pathlib import Path
 from random import choice
 import io
 
-Y_DENSITY = 8
+Y_DENSITY = 4
+EMPTY = 5
 DEBUG_DIR = "C:/Users/T470s/Documents/GitHub/cltk-2025-atticus"
 
 # directory of the PDFs at the moment
@@ -118,12 +119,13 @@ def test_formatting(index: int = -1, y_density=Y_DENSITY):
     """
     pdfV1 = pdfplumber.open(str(dir + Vol1))
     pdfV2 = pdfplumber.open(str(dir + Vol2))
+    pages = pdfV1.pages[keep_Vol1:] + pdfV2.pages[keep_Vol2:]
 
     final_index: int = index
     if index == -1:
         final_index = rand_letter()
 
-    save_output(pdfV1.pages[final_index].extract_text(layout=True, y_density=y_density))
+    save_output(pages[final_index].extract_text(layout=True, y_density=y_density))
 
 
 import random
@@ -137,6 +139,25 @@ def rand_letter() -> int:
     pdfV1 = pdfplumber.open(str(dir + Vol1))
     pdfV2 = pdfplumber.open(str(dir + Vol2))
     return random.randint(0, len(pdfV1.pages))
+
+
+def rand_page():
+    """
+    NOT FOR USE IN FINAL PROGRAM
+    Gives the number of a random letter in the test PDF
+    """
+    pdfV1 = pdfplumber.open(str(dir + Vol1))
+    pdfV2 = pdfplumber.open(str(dir + Vol2))
+    pages = pdfV1.pages[keep_Vol1:] + pdfV2.pages[keep_Vol2:]
+    rand = random.randint(0, len(pages))
+    return pages[rand]
+
+
+def get_pages():
+    pdfV1 = pdfplumber.open(str(dir + Vol1))
+    pdfV2 = pdfplumber.open(str(dir + Vol2))
+    pages = pdfV1.pages[keep_Vol1:] + pdfV2.pages[keep_Vol2:]
+    return pages
 
 
 def clean_text(page):
@@ -173,14 +194,15 @@ def clean_text(page):
     index_footer = -1
     num_empty_lines = 0  # Needs to equal three before exiting the loop
     for n_line in range(num_lines, -1, -1):
-        if stichic_text[n_line].isspace():
+        line = stichic_text[n_line]
+        if line.isspace():
             num_empty_lines += 1
         # If we hit text, we reset the empty line count
         else:
             num_empty_lines = 0
 
         # If we hit three empty spaces, save the index
-        if num_empty_lines == 3:
+        if num_empty_lines == EMPTY:
             index_footer = n_line
             break
 
@@ -214,8 +236,17 @@ def clean_text(page):
     ##############EVERY FUNCTION AFTER THIS OPERATES ON THE WHOLE STRING############
     ##############MAKE SURE TO USE THE text VAR, NOT THE stichic_text var############
     text = "\n".join(stichic_text)
-
+    text = fix_common_ocr(text)
     return remove_invalid_characters(text)
+
+
+def fix_common_ocr(text: str):
+    """
+    Replace common mistakes, like 'tarnen' with 'tamen'
+    """
+    text = text.replace("tarnen", "tamen")
+    text = text.replace("Ser.", "Scr.")
+    return text
 
 
 def remove_invalid_characters(text: str) -> str:
@@ -256,7 +287,7 @@ def remove_invalid_characters(text: str) -> str:
     )
     text = ".\n".join(split)
 
-    return text + "\n\n"
+    return text
 
 
 def validate_page(page: str) -> bool:
@@ -271,7 +302,8 @@ def validate_page(page: str) -> bool:
     :return: Description
     :rtype: bool
     """
-    return bool(page)
+    b = any(i.isalnum() for i in page)
+    return b
 
 
 # Index of the first real page in each PDF
@@ -299,23 +331,37 @@ def process_pages_att() -> etree._Element:
 
             tree = etree.Element("pages")
 
+            # Combine the text together
+            plaintext = "".join(str_pages)
+
+            i = 0
             for p in str_pages:
                 # create a page element (any arbitrary element can fit in <content/>)
                 p_element: etree._Element = etree.Element("page")
                 # Add the page's processed text as the element's content
-                p_element.text = p
+                if i in [39, 241, 247, 249, 252, 430, 481, 486, 595, 672]:
+                    p_element.text = pages[i].extract_text()
+                else:
+                    p_element.text = p
+
+                p_element.set("n", str(i))
 
                 # If the page doesn't validate, that currently means it's empty. i
                 # Add an attribute that identifies it as empty
-                if not validate_page:
+                b = validate_page(p)
+                if not b:
                     p_element.set("flag", "empty")
 
                 # Add the final page element to the content we are going to add
                 tree.append(p_element)
+                i += 1
 
             final_work = create_work(
-                tree, "Letters to Atticus", "Marcus Tullius Cicero", "", pages=True
+                tree, "Letters to Atticus", "Marcus Tullius Cicero", Vol1, pages=True
             )
+
+            # add the plaintext
+            final_work.append(E.content(plaintext, type="plaintext"))
             return final_work
 
 
@@ -327,6 +373,10 @@ def save_pages_att(work: etree._Element) -> None:
     :param work: An element tree returned from process_pages_att()
     :type work: etree._Element
     """
+
+    data_file = open_results()
+    add_work(work, data_file=data_file)
+    write_results(data_file)
 
 
 # TODO THESE ARE LINES OF CODE FOR DEBUGGING I NEED TO CLEAN UP
@@ -1086,17 +1136,18 @@ import cltk.core.data_types as types
 import cltk.morphosyntax.conll as conll
 
 
-def process_text(text: str) -> types.Doc:
+def process_text(text: str, nlp: NLP) -> types.Doc:
     f"""
     Docstring for process_text
     Processes the Perseus DL texts and the Letters to Atticus with the CLTK
     
     :param text: The plaintext for a work, as retrieved from the <content type="plaintext"/> element in the {results_file} file
     :type text: str 
+    :param nlp: An NLP for Latin from the CLTK. Added this so it didn't have to create a new parser every time. In theory, could also work with an older version of CLTK before AI backends, although the return type annotation would no longer be valid (I don't believe the 'Doc' datatype is in cltk.core.data_types in the original).
+    :type nlp: cltk.nlp.NLP
     :return: Description
     :rtype: NLP from the CLTK for a single work
     """
-    nlp = NLP("lati1261", backend="stanza")
     doc = nlp.analyze(text)
     return doc
 
@@ -1181,10 +1232,13 @@ def postag_validation(tagged: NLP) -> None:
     pass
 
 
-def process_results() -> None:
+def process_results(skip_finished=False) -> None:
     f"""
     Docstring for process_results
     This function takes the results file, {results_file}, and adds a postagged content element for each one
+
+    :param skip_finished: If true, the algorithm only processes texts which don't already have a <content type="postagged"/> element. Default behavior is to re-postag everything, so it's set to False.
+    :type skip_finished: bool
     """
 
     # Get every work in the results page
@@ -1193,11 +1247,17 @@ def process_results() -> None:
     for work in open_results():
         content = work.find("./content[@type='plaintext']")
 
+        # If the skip_finished bool is True, we want to skip works where there already is a postagged set.
+        if skip_finished and (work.find("./content[@type='postagged']") is not None):
+            continue
+
         doc: types.Doc
+
+        nlp = NLP("lati1261", backend="stanza")
 
         # Get the CLTK Doc. If there is no content, continue to the next iteration of the loop
         try:
-            doc = process_text(content.text)
+            doc = process_text(content.text, nlp)
         except AttributeError:
             continue
 
@@ -1230,8 +1290,14 @@ if __name__ == "__main__":
     # save_output(etree.tostring(process_pages_att(), pretty_print=True).decode("utf-8"))
 
     # print(etree.tostring(content))
+    """
+    pages = get_pages()
 
-    process_results()
+    index = 691
+    print(test_formatting(index=index))
+    print(clean_text(pages[index]))"""
+
+    save_pages_att(process_pages_att())
 
     """perseus_to_file(
         pathArg="rand",
