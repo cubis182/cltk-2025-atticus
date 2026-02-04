@@ -64,7 +64,7 @@ from random import choice
 import io
 
 Y_DENSITY = 4
-EMPTY = 5
+EMPTY = 4
 DEBUG_DIR = "C:/Users/T470s/Documents/GitHub/cltk-2025-atticus"
 
 # directory of the PDFs at the moment
@@ -189,12 +189,13 @@ def clean_text(page):
     num_lines = len(stichic_text) - 1  # subtract one to make indexing easy
 
     # Get the block of text at the end of the page which has
-    # at minimum 3 blank lines above it. <string>.isspace() will
+    # at minimum EMPTY blank lines above it. <string>.isspace() will
     # return True if it's a blank line
     index_footer = -1
     num_empty_lines = 0  # Needs to equal three before exiting the loop
     for n_line in range(num_lines, -1, -1):
         line = stichic_text[n_line]
+
         if line.isspace():
             num_empty_lines += 1
         # If we hit text, we reset the empty line count
@@ -214,6 +215,36 @@ def clean_text(page):
         print(
             f"Error in clean_text(): Index of footer not found\n Below is the page:\n{text}"
         )
+
+    # Do an additional check for sigla in the last few lines
+    index_footer = -1
+    num_lines = len(stichic_text) - 1
+    for n_line in range(num_lines, -1, -1):
+        line = stichic_text[n_line]
+
+        b = re.search("[ΣδΔΩλς]", line)
+        if not (b or line.isspace()):
+            index_footer = n_line
+            break
+
+        if line.isspace():
+            num_empty_lines += 1
+        else:
+            num_empty_lines = 0
+            index_footer = n_line
+
+        # If we hit three empty spaces, save the index
+        if num_empty_lines == EMPTY:
+            index_footer = n_line
+            break
+    # Make sure it isn't the last line
+    if index_footer > -1 and index_footer < (len(stichic_text) - 1):
+        try:
+            del stichic_text[index_footer:]
+        except IndexError:
+            print(
+                f"Error in clean_text(): Index of footer not found\n Below is the page:\n{text}"
+            )
 
     # Remove the header. This involves removing all the blank
     # lines at the start of the page, the first alphanum line, and
@@ -262,6 +293,8 @@ def remove_invalid_characters(text: str) -> str:
 
     # Remove gaps between words bigger than a space
     text = re.sub("[\n ]+", " ", text)
+
+    text = re.sub("\n\n", "", text)
 
     # TODO Remove pairs of parentheses where one of the two are
     # right next to a letter. In that case, it's usually an
@@ -1290,14 +1323,14 @@ if __name__ == "__main__":
     # save_output(etree.tostring(process_pages_att(), pretty_print=True).decode("utf-8"))
 
     # print(etree.tostring(content))
-    """
+
     pages = get_pages()
 
-    index = 691
+    index = 434
     print(test_formatting(index=index))
-    print(clean_text(pages[index]))"""
+    print(clean_text(pages[index]))
 
-    save_pages_att(process_pages_att())
+    # save_pages_att(process_pages_att())
 
     """perseus_to_file(
         pathArg="rand",
