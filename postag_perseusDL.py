@@ -160,10 +160,12 @@ def get_pages():
     return pages
 
 
-def clean_text(page):
+def clean_text(page, spaces_algorithm=True):
     """Takes a pdfplumber.Page and normalizes the text.
     The function removes headers, footers, and spaces. It joins words
     across line boundaries, and adds a gap between letters.
+
+    spaces_algorithm, when set to true, performs the heuristic for removing the footer
 
     Dependencies:
     re
@@ -178,6 +180,7 @@ def clean_text(page):
 
     num_lines = len(stichic_text) - 1  # subtract one to make indexing easy
 
+    # Remove blank lines at the end
     for n_line in range(num_lines, -1, -1):
         line_is_blank = stichic_text[n_line].isspace()
         # print(line_is_blank)
@@ -188,57 +191,28 @@ def clean_text(page):
 
     num_lines = len(stichic_text) - 1  # subtract one to make indexing easy
 
-    # Get the block of text at the end of the page which has
-    # at minimum EMPTY blank lines above it. <string>.isspace() will
-    # return True if it's a blank line
-    index_footer = -1
-    num_empty_lines = 0  # Needs to equal three before exiting the loop
-    for n_line in range(num_lines, -1, -1):
-        line = stichic_text[n_line]
+    if spaces_algorithm:
+        # Get the block of text at the end of the page which has
+        # at minimum EMPTY blank lines above it. <string>.isspace() will
+        # return True if it's a blank line
+        index_footer = -1
+        num_empty_lines = 0  # Needs to equal three before exiting the loop
+        for n_line in range(num_lines, -1, -1):
+            line = stichic_text[n_line]
 
-        if line.isspace():
-            num_empty_lines += 1
-        # If we hit text, we reset the empty line count
-        else:
-            num_empty_lines = 0
+            if line.isspace():
+                num_empty_lines += 1
+            # If we hit text, we reset the empty line count
+            else:
+                num_empty_lines = 0
 
-        # If we hit three empty spaces, save the index
-        if num_empty_lines == EMPTY:
-            index_footer = n_line
-            break
+            # If we hit three empty spaces, save the index
+            if num_empty_lines == EMPTY:
+                index_footer = n_line
+                break
 
-    # print(f"clean_text(): Debug message: index_footer is equal to {index_footer}")
+        # print(f"clean_text(): Debug message: index_footer is equal to {index_footer}")
 
-    try:
-        del stichic_text[index_footer:]
-    except IndexError:
-        print(
-            f"Error in clean_text(): Index of footer not found\n Below is the page:\n{text}"
-        )
-
-    # Do an additional check for sigla in the last few lines
-    index_footer = -1
-    num_lines = len(stichic_text) - 1
-    for n_line in range(num_lines, -1, -1):
-        line = stichic_text[n_line]
-
-        b = re.search("[ΣδΔΩλς]", line)
-        if not (b or line.isspace()):
-            index_footer = n_line
-            break
-
-        if line.isspace():
-            num_empty_lines += 1
-        else:
-            num_empty_lines = 0
-            index_footer = n_line
-
-        # If we hit three empty spaces, save the index
-        if num_empty_lines == EMPTY:
-            index_footer = n_line
-            break
-    # Make sure it isn't the last line
-    if index_footer > -1 and index_footer < (len(stichic_text) - 1):
         try:
             del stichic_text[index_footer:]
         except IndexError:
@@ -246,6 +220,7 @@ def clean_text(page):
                 f"Error in clean_text(): Index of footer not found\n Below is the page:\n{text}"
             )
 
+    stichic_text = remove_app_crit(stichic_text)
     # Remove the header. This involves removing all the blank
     # lines at the start of the page, the first alphanum line, and
     # all the blank lines after that
@@ -269,6 +244,24 @@ def clean_text(page):
     text = "\n".join(stichic_text)
     text = fix_common_ocr(text)
     return remove_invalid_characters(text)
+
+
+def remove_app_crit(stichic_text: list[str]) -> list[str]:
+    # Only check the last half for markers of an app crit
+    length = len(stichic_text)
+    stichic_copy = stichic_text
+    stichic_text = [
+        x
+        for x in stichic_text
+        if not (
+            re.search(
+                "( Δ | : |om\\.|ed\\.|Ep\\.|cett\\.| Ω | λ | Σ | Δ | ς |vel sim\\.|Corradus|Casaubon|Madvig|Phoenix|Kayser|Goodyear|Housman|Meutzner|Schmidt|Reid|cod\\.|codd\\.|corr\\.|MSS\\.)",
+                x,
+            )
+        )
+        or stichic_copy.index(x) < int(0.75 * length)
+    ]
+    return stichic_text
 
 
 def fix_common_ocr(text: str):
@@ -373,7 +366,12 @@ def process_pages_att() -> etree._Element:
                 p_element: etree._Element = etree.Element("page")
                 # Add the page's processed text as the element's content
                 if i in [39, 241, 247, 249, 252, 430, 481, 486, 595, 672]:
-                    p_element.text = pages[i].extract_text()
+                    # These pages proved troublesome, need manual handling
+                    special_text = pages[i]
+                    special_text = clean_text(
+                        special_text, spaces_algorithm=False
+                    )  # make sure to unlist it!!!!
+                    p_element.text = special_text
                 else:
                     p_element.text = p
 
@@ -1324,13 +1322,13 @@ if __name__ == "__main__":
 
     # print(etree.tostring(content))
 
-    pages = get_pages()
+    """pages = get_pages()
 
-    index = 434
+    index = 595
     print(test_formatting(index=index))
-    print(clean_text(pages[index]))
+    print(clean_text(pages[index]))"""
 
-    # save_pages_att(process_pages_att())
+    save_pages_att(process_pages_att())
 
     """perseus_to_file(
         pathArg="rand",

@@ -23,7 +23,30 @@ data <- xmlToDataFrame(nodes=getNodeSet(perseus, "//word"))
 #xmlToDataFrame(nodes=xmlChildren(perseus$doc$children$root$children$work[[5]]$children$sentence))
 
 
+#####Creating a new data frame with the number of each value
 
+data <- subset(data, select= -title)
+titles <- unique(data$title)
+final.frame <- data.frame(title=titles)
+
+for (i in 1:length(titles)) {
+  frame <- data[data$title == titles[i],]
+  frame <- subset(frame, select= c(-form, -title, -path))
+  for (n in c(1:22)) {
+    t <- table(frame[,n])
+    t <- prop.table(t)
+    names <- names(t)
+    
+    for (name_index in seq(1, length(names))) {
+      final.frame[i, names[name_index]] <- unname(t[names[name_index]])
+    }
+  }
+}
+
+for (i in 2:length(final.frame)) {
+  frame <- final.frame[,i]
+  final.frame[,i] <- frame * (10000/sum(frame))
+}
 
 #####NOTES############
 #69/641 items marked Poss were not possessive
