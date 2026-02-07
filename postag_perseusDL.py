@@ -1226,6 +1226,8 @@ def doc_to_element(tagged: types.Doc, title: str, path: str) -> etree._Element:
             w_elem.append(form)
 
             for item in word.upos:
+                if item[0] in ["name", "open_class"]:
+                    continue
                 # w_elem.set(str(item[0]), str(item[1])) NO LONGER USING ATTRIBUTES, BUT ELEMENTS
 
                 # Add a child element for each POS feature.
@@ -1238,6 +1240,8 @@ def doc_to_element(tagged: types.Doc, title: str, path: str) -> etree._Element:
                 for item in word.features.features:
                     # Add a child element for each feature.
                     # The feature name is the element name, and the value is the element text
+                    if item.key in ["Foreign", "Poss", "Reflex", "Abbr"]:
+                        continue
                     child = etree.Element(str(item.key))
                     child.text = str(item.value)
                     w_elem.append(child)
@@ -1275,6 +1279,8 @@ def process_results(skip_finished=False) -> None:
     # Get every work in the results page
     results_xml: etree._Element = open_results()
 
+    nlp = NLP("lati1261", backend="stanza")
+
     for work in open_results():
         content = work.find("./content[@type='plaintext']")
 
@@ -1283,8 +1289,6 @@ def process_results(skip_finished=False) -> None:
             continue
 
         doc: types.Doc
-
-        nlp = NLP("lati1261", backend="stanza")
 
         # Get the CLTK Doc. If there is no content, continue to the next iteration of the loop
         try:
@@ -1311,6 +1315,24 @@ def process_results(skip_finished=False) -> None:
     # write_results(results_xml)
 
 
+def save_abridged_results():
+    f"""
+    This function opens {results_file} and puts only the relevant postagged results into a separate file
+    """
+
+    data_file: etree._Element = open_results()
+
+    # Get the root we will make the toplevel of the final document
+    root: etree._Element = etree.Element("root")
+
+    for e in data_file.iter(tag="word"):
+        root.append(e)
+
+    rootTree = root.getroottree()
+
+    rootTree.write("./postagged_only.xml", encoding="utf-8")
+
+
 ##################################################################
 
 if __name__ == "__main__":
@@ -1322,13 +1344,21 @@ if __name__ == "__main__":
 
     # print(etree.tostring(content))
 
+    # perseus_to_file(random.sample(get_paths(), 100), index=-1)
+
+    process_results(skip_finished=True)
+
     """pages = get_pages()
 
     index = 595
     print(test_formatting(index=index))
     print(clean_text(pages[index]))"""
 
-    save_pages_att(process_pages_att())
+    # save_pages_att(process_pages_att())
+
+    # process_results(skip_finished=False)
+
+    # save_abridged_results()
 
     """perseus_to_file(
         pathArg="rand",

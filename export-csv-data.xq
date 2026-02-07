@@ -2,12 +2,26 @@ import module namespace functx = "http://www.functx.com" at "https://www.datypic
 
 declare variable $doc := fn:doc("./atticus-study-results.xml");
 
+declare variable $postag := fn:doc("./postagged_only.xml");
+
 (:These are all the tags added to words:)
-declare variable $all-tags := ("tag", "name", "open_class", "Case", "Gender", "NumType", "Number", "PronType", "Aspect", "VerbForm", "Voice", "Mood", "Person", "Tense", "Foreign", "Degree", "Poss", "Reflex", "Polarity", "Abbr");
+declare variable $all-tags := ("title", "path", "tag", "Case", "Gender", "Number", "PronType", "Aspect", "VerbForm", "Voice", "Mood", "Person", "Tense", "Degree", "Polarity");
+
+let $tags := fn:distinct-values($postag//word/*/node-name(.))
+let $root :=
+<root>
+{
+  for $word in $postag//word
+  return <word>
+  {for $t in $tags
+  return element {$t} {$word/*[node-name(.) = $t]/text()}}
+  </word>
+}
+</root>
+return csv:serialize($root, map{"header":true()})
 
 
-let $works := $doc//work
-for $w in $works
+
 (:We need the following:)
 
 (:
