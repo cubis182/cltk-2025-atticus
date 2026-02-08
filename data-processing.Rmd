@@ -1,24 +1,175 @@
 ---
 title: "R Notebook"
 output: html_notebook
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
+@inproceedings{johnson-etal-2021-classical, title = "The {C}lassical
+{L}anguage {T}oolkit: {A}n {NLP} Framework for Pre-Modern Languages",
+author = "Johnson, Kyle P. and Burns, Patrick J. and Stewart, John and
+Cook, Todd and Besnier, Cl{'e}ment and Mattingly, William J. B.",
+booktitle = "Proceedings of the 59th Annual Meeting of the Association
+for Computational Linguistics and the 11th International Joint
+Conference on Natural Language Processing: System Demonstrations", month
+= aug, year = "2021", address = "Online", publisher = "Association for
+Computational Linguistics", url =
+"<https://aclanthology.org/2021.acl-demo.3>", doi =
+"10.18653/v1/2021.acl-demo.3", pages = "20--29", abstract = "This paper
+announces version 1.0 of the Classical Language Toolkit (CLTK), an NLP
+framework for pre-modern languages. The vast majority of NLP, its
+algorithms and software, is created with assumptions particular to
+living languages, thus neglecting certain important characteristics of
+largely non-spoken historical languages. Further, scholars of pre-modern
+languages often have different goals than those of living-language
+researchers. To fill this void, the CLTK adapts ideas from several
+leading NLP frameworks to create a novel software architecture that
+satisfies the unique needs of pre-modern languages and their
+researchers. Its centerpiece is a modular processing pipeline that
+balances the competing demands of algorithmic diversity with
+pre-configured defaults. The CLTK currently provides pipelines,
+including models, for almost 20 languages.", }
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you
+execute code within the notebook, the results appear beneath the code.
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+Try executing this chunk by clicking the *Run* button within the chunk
+or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
 
 ```{r}
 plot(cars)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+*Add a new chunk by clicking the* Insert Chunk\* button on the toolbar
+or by pressing *Ctrl+Alt+I*.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+When you save the notebook, an HTML file containing the code and output
+will be saved alongside it (click the *Preview* button or press
+*Ctrl+Shift+K* to preview the HTML file).\*
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+*The preview shows you a rendered HTML copy of the contents of the
+editor. Consequently, unlike* Knit*,* Preview\* does not run any R code
+chunks. Instead, the output of the chunk when it was last run in the
+editor is displayed.\*
 
-```{r }
+```{r Get postagged_only.csv. Big data!}
+data <- read.csv("C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/postagged_only.csv", na.strings="")
+
+
+
+titles <- unique(data$title)
+num_words <- table(data$title)
+final.frame <- data.frame(title=titles)
+
+summary(data)
+```
+
+Now that we have the data, what we're *really* interested in is how many
+of each tag appears in each work (how many of each POS, how many perfect
+verbs, whatever). The point is, we're not interested in every individual
+word.
+
+This block of code will loop through and create a new data frame called
+***final.frame*** (which is probably poorly named, but I'll fix it later
+or I won't). This data frame has a variable for the count of each tag,
+and every row is a unique work.
+
+```{r Create final.frame}
+
+for (i in 1:length(titles)) {
+  frame <- data[data$title == titles[i],]
+  frame <- subset(frame, select= c(-form, -path, -NumType))
+  for (n in 2:length(frame)) {
+    t <- table(frame[,n])
+    t <- prop.table(t)
+    names <- names(t)
+    
+    for (name_index in seq(1, length(names))) {
+      final.frame[i, names[name_index]] <- unname(t[names[name_index]])
+    }
+  }
+}
+```
+
+A few things will make our life easier. We don't want any NAs in there,
+because that'll gum up the clustering. We'll replace any missing values
+with 0, because 0 occurrences of a variable is the only reason there
+would be NA values at this stage.
+
+I have a *hopefully* temporary measure where I replace row 46's title
+with Apocolocynthosis. The title is given as "Petronius. Seneca
+Apocolocynthosis" because it's based off a Loeb edition of that name.
+However, when I abbreviate the names at the end of this block, this
+makes it ambiguous with the other Perseus text which contains just
+Petronius, and **rownames()** doesn't allow duplicates.
+
+I also remove Cicero's works other than the Letters to Atticus. The
+reason is that the clustering algorithm greatly prefers to put works by
+the same author together. This is great, but we're not interested in the
+authorship of the Letters. We're interested in how similar it is to
+other texts of the same genre. So, Cicero has to go.
+
+I also take a measure here to multiply all the values by 100. Just makes
+them nicer to look at, instead of having all these tiny numbers in
+scientific notation.
+
+Finally, we do what I said above, turning the rownames into the title
+
+```{r Clean up final.frame}
+
+
+#Clean up NAs and filter out Cicero's works that are not the Letters to Atticus
+final.frame[is.na(final.frame)] <- 0
+
+#CAN GET RID OF THIS LATER WHEN I FIX TITLES
+final.frame$title[46] <- "Apocolocynthosis"
+
+cicero_works_nonatt <- c("M. Tulli Ciceronis Orationes", "Librorum de Re Publica Sex", "M. Tulli Ciceronis\nscripta quae manserunt omnia,\nfasc. 43", "de Natura Deorum", "M. Tullii Ciceronis opera quae supersunt omnia", "Tusculanae Disputationes", "M. Tulli Ciceronis Rhetorica, Tomus II", "De Senectute De Amicitia De Divinatione, With An English Translation", "Epistulae ad Familiares", "Letters to and from Quintus")
+
+final.frame <- final.frame[(final.frame$title %in% cicero_works_nonatt) == FALSE,]
+
+#Multiply to get larger values
+final.frame[,2:55] <- final.frame[,2:55] * 100
+
+#These values give NA, cause issues
+final.frame[c("Neg", "Rcp", "Art")] <- NULL
+
+rownames(final.frame) <- final.frame$title
 
 ```
 
+Now that we have a viable DF, let's cut it up a little bit. We don't
+want the first column, because that's all text. Not every clustering
+algorithm needs the DF to be pre-scaled (that is, subtracting the mean
+from every value and dividing it by the standard deviation to make the
+comparable). However, some do expect the data to be scaled, so lets
+create two variables. **df_clust** isn't scaled, and **df_scaled** is.
+
+```{r df_clust & df_scaled}
+
+df_clust <- final.frame[,2:52]
+
+df_scaled <- scale(df_clust)
+```
+
+Time to cluster! The visualization (which I get with fviz_nbclust below)
+shows that 4ish is about as good as we get with clusters (and using hcut
+in the next code block, it seems that's a good call).
+
+```{r K-means clustering}
+
+kmeans_basic_cluster <- kmeans(df_scaled, centers=4, nstart=20)
+kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
+kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, final.frame)
+
+#Visualizations
+
+fviz_nbclust(df_clust, kmeans, method="wss", nstart=50)
+
+fviz_cluster(kmeans_basic_cluster, data = df_clust, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             ) + geom_text(aes(label=rownames(df_clust)))
+```

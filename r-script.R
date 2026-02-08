@@ -80,7 +80,7 @@ kmeans_basic_cluster <- kmeans(scaled_data, centers=4, nstart=20)
 kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
 kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, final.frame)
 
-hcut_results <- hcut(data_kmeans, k=4)
+hcut_results <- hcut(data_kmeans)
 
 #Visualize ideal number of clusters
 fviz_nbclust(data_kmeans, kmeans, method="wss", nstart=50)
