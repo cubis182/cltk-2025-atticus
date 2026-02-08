@@ -53,16 +53,22 @@ editor. Consequently, unlike* Knit*,* Preview\* does not run any R code
 chunks. Instead, the output of the chunk when it was last run in the
 editor is displayed.\*
 
+```{r Libraries}
+
+library(factoextra)
+```
+
 ```{r Get postagged_only.csv. Big data!}
 data <- read.csv("C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/postagged_only.csv", na.strings="")
 
+summary(data)
+```
 
-
+```{r }
 titles <- unique(data$title)
 num_words <- table(data$title)
 final.frame <- data.frame(title=titles)
 
-summary(data)
 ```
 
 Now that we have the data, what we're *really* interested in is how many
@@ -82,12 +88,19 @@ for (i in 1:length(titles)) {
   frame <- subset(frame, select= c(-form, -path, -NumType))
   for (n in 2:length(frame)) {
     t <- table(frame[,n])
-    t <- prop.table(t)
+    #t <- prop.table(t)
     names <- names(t)
     
     for (name_index in seq(1, length(names))) {
       final.frame[i, names[name_index]] <- unname(t[names[name_index]])
     }
+  }
+}
+
+#Normalize by number of words in each work
+for (i in 2:length(final.frame[1,])) {
+  for (n in 1:length(final.frame[,1])) {
+    final.frame[n,i] <- final.frame[n,i] * (10000 / num_words[[final.frame[n,]$title]])
   }
 }
 ```
@@ -110,11 +123,14 @@ the same author together. This is great, but we're not interested in the
 authorship of the Letters. We're interested in how similar it is to
 other texts of the same genre. So, Cicero has to go.
 
-I also take a measure here to multiply all the values by 100. Just makes
-them nicer to look at, instead of having all these tiny numbers in
-scientific notation.
+The numbers aren't normalized according to the size of their respective
+works yet, so I've divided each number by the total number of words in
+the given work in the next chunk. I multiplied each by 100,000 too, just
+to get numbers that look a little nicer and aren't in scientific
+notation.
 
-Finally, we do what I said above, turning the rownames into the title
+Finally, we do what I said above, turning the rownames into the title. I
+shorten them to 12 characters max.
 
 ```{r Clean up final.frame}
 
@@ -123,19 +139,18 @@ Finally, we do what I said above, turning the rownames into the title
 final.frame[is.na(final.frame)] <- 0
 
 #CAN GET RID OF THIS LATER WHEN I FIX TITLES
-final.frame$title[46] <- "Apocolocynthosis"
+final.frame$title[46] <- "Apocolocyntosis"
+#final.frame <- final.frame[grepl("Horace", final.frame$title) == FALSE,]
 
 cicero_works_nonatt <- c("M. Tulli Ciceronis Orationes", "Librorum de Re Publica Sex", "M. Tulli Ciceronis\nscripta quae manserunt omnia,\nfasc. 43", "de Natura Deorum", "M. Tullii Ciceronis opera quae supersunt omnia", "Tusculanae Disputationes", "M. Tulli Ciceronis Rhetorica, Tomus II", "De Senectute De Amicitia De Divinatione, With An English Translation", "Epistulae ad Familiares", "Letters to and from Quintus")
 
 final.frame <- final.frame[(final.frame$title %in% cicero_works_nonatt) == FALSE,]
 
-#Multiply to get larger values
-final.frame[,2:55] <- final.frame[,2:55] * 100
-
 #These values give NA, cause issues
 final.frame[c("Neg", "Rcp", "Art")] <- NULL
 
 rownames(final.frame) <- final.frame$title
+rownames(final.frame) <- lapply(X=rownames(final.frame), FUN=substr, start=1, stop=12)
 
 ```
 
@@ -154,22 +169,192 @@ df_scaled <- scale(df_clust)
 ```
 
 Time to cluster! The visualization (which I get with fviz_nbclust below)
-shows that 4ish is about as good as we get with clusters (and using hcut
+shows that 2ish is about as good as we get with clusters (and using hcut
 in the next code block, it seems that's a good call).
 
 ```{r K-means clustering}
 
-kmeans_basic_cluster <- kmeans(df_scaled, centers=4, nstart=20)
+kmeans_basic_cluster <- kmeans(df_scaled, centers=5, nstart=20)
 kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
 kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, final.frame)
+
+#TODO ADD SUMMARIES OF THE ABOVE DATA HERE
+
+#Principal component analysis
+
+pca <- prcomp(df_scaled)
+
+summary(pca)
 
 #Visualizations
 
 fviz_nbclust(df_clust, kmeans, method="wss", nstart=50)
 
-fviz_cluster(kmeans_basic_cluster, data = df_clust, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
+fviz_cluster(kmeans_basic_cluster, data = df_clust, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red","gray"), 
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
              ) + geom_text(aes(label=rownames(df_clust)))
+
+str(kmeans_basic_cluster)
+```
+
+But it might be a good idea to look at other methods of clustering as
+well. The graphs above seem to show that K-means gets some well-defined
+groupings, but let's test out hcut. I do know that there are many
+methods of hclust, so the next step after some more experimentation is
+to try that.
+
+```{r Hierarchical clustering}
+
+hcut_results <- hcut(df_clust)
+
+fviz_nbclust(df_clust, hcut, method="wss")
+
+margin_size <- 10
+
+fviz_dend(hcut_results, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
+          geom = "point",
+          ellipse.type = "convex",
+          type = "rectangle",
+          #horiz=TRUE,
+          ggtheme = theme_bw(),
+) + geom_point() + coord_cartesian(ylim = c(-2000, 10000)) + theme(margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
+
+```
+
+```{r Hierarchical clustering just POS}
+
+df_pos <- df_clust[,1:15]
+
+hcut_results <- hcut(df_pos)
+
+fviz_nbclust(df_pos, hcut, method="wss")
+
+margin_size <- 10
+
+fviz_dend(hcut_results,  k = 5, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red", "gray"), 
+          geom = "point",
+          ellipse.type = "convex",
+          type = "rectangle",
+          #horiz=TRUE,
+          ggtheme = theme_bw(),
+) + geom_point()# + coord_cartesian(ylim = c(-1000, 2100)) + theme(margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
+
+```
+
+```{r}
+scaled_pos <- scale(df_pos)
+kmeans_basic_cluster <- kmeans(scaled_pos, centers=5, nstart=20)
+kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
+kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_pos)
+
+#TODO ADD SUMMARIES OF THE ABOVE DATA HERE
+
+pca <- prcomp(scaled_pos)
+
+summary(pca)
+
+#Visualizations
+
+choose <- NULL
+
+fviz_nbclust(df_clust, kmeans, method="wss", nstart=50)
+
+fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_pos, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red", "gray"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             ) + geom_text(aes(label=rownames(df_clust)))
+```
+
+Note in the following how the Letters to Atticus are quite far away from
+Comedy and Petronius! Unlike the previous, when looking at POS tags.
+
+```{r Hierarchical Clustering Just Verb info}
+
+df_verb <- df_clust[,34:49]
+
+hcut_results <- hcut(df_verb)
+
+fviz_nbclust(df_verb, hcut, method="wss")
+
+margin_size <- 10
+
+fviz_dend(hcut_results, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
+          geom = "point",
+          ellipse.type = "convex",
+          type = "rectangle",
+          #horiz=TRUE,
+          ggtheme = theme_bw(),
+) + geom_point()# + coord_cartesian(ylim = c(-1000, 2100)) + theme(margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
+```
+
+```{r VERBS, NOT POS}
+scaled_verb <- scale(df_verb)
+kmeans_basic_cluster <- kmeans(scaled_verb, centers=5, nstart=20)
+kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
+kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_verb)
+
+#TODO ADD SUMMARIES OF THE ABOVE DATA HERE
+
+pca <- prcomp(scaled_verb)
+
+summary(pca)
+
+#Visualizations
+
+choose <- NULL
+
+fviz_nbclust(scaled_verb, kmeans, method="wss", nstart=50)
+
+fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_verb, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red", "gray"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             ) + geom_text(aes(label=rownames(df_clust)))
+```
+
+When looking at Case, it seems that Comedy, Seneca, Petronius, and the
+Letters to Atticus cluster together again. It is a strong enough cluster
+that they nearly form their own category.
+
+```{r Hierarchical clustering Case}
+
+df_case <- df_clust[,16:22]
+
+hcut_results <- hcut(df_case)
+
+fviz_nbclust(df_case, hcut, method="wss")
+
+margin_size <- 10
+
+fviz_dend(hcut_results, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
+          geom = "point",
+          ellipse.type = "convex",
+          type = "rectangle",
+          #horiz=TRUE,
+          ggtheme = theme_bw(),
+) + geom_point()# + coord_cartesian(ylim = c(-1000, 2100)) + theme(margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
+```
+
+I want to understand K-means clustering better, so I'm gonna play around
+with it here
+
+```{r Kmeans tests}
+
+frame <- data.frame(a=rnorm(10, mean = 10), b=rnorm(10, mean = 20))
+
+scaled <- scale(frame)
+
+scaled
+
+km_result <- kmeans(scaled, centers = 2, nstart = 5)
+km_table <- data.frame(km_result$cluster, km_result$centers)
+
+fviz_cluster(km_result, data = scaled, palette = c("gray", "red"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             ) 
 ```

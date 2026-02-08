@@ -633,6 +633,8 @@ def get_paths() -> list[Path]:
 
 
 def get_title_auth_body(tree: etree._Element) -> dict:
+    """ """
+
     # We need to make sure it's a real TEI file with the xml namespace.
     # Some files in the PerseusDL use TEI without the namespace
 
@@ -662,13 +664,13 @@ def get_title_auth_body(tree: etree._Element) -> dict:
     # We need to test a few things in case the title isn't in the right spot
     titleEl = __run_xpath(title, is_TEI, tree, tei)
 
-    if titleEl is None:
-        titleEl = __run_xpath(".//biblStruct/monogr/title", is_TEI, tree, tei)
+    # if titleEl is None:
+    #    titleEl = __run_xpath(".//biblStruct/monogr/title", is_TEI, tree, tei)
 
     authorEl = __run_xpath(author, is_TEI, tree, tei)
 
-    if authorEl is None:
-        authorEl = __run_xpath(".//biblStruct//author", is_TEI, tree, tei)
+    # if authorEl is None:
+    #    authorEl = __run_xpath(".//biblStruct//author", is_TEI, tree, tei)
 
     # If we still don't have a valid author or title node, we give up
     if titleEl is not None:
@@ -1342,6 +1344,41 @@ def save_abridged_results():
     rootTree.write("./postagged_only.xml", encoding="utf-8")
 
 
+def update_titles(path: str = ""):
+    f"""
+    This function goes through each <work> in {results_file}, replacing the title along the way
+
+    :param path: Optional, mainly used for debugging. Allows picking a single work, especially a troublesome one.
+    :type path: str
+    """
+
+    results_xml = open_results()
+
+    if path:
+        works = [results_xml.find(f".//work[path = '{path}']")]
+    else:
+        works = results_xml.findall(".//work")
+
+    for work in works:
+        e_path = work.find("path")
+        tei = etree.parse(e_path.text)
+
+        # Get the root of the tree and pass it to the function for getting the title
+        authority_dict = get_title_auth_body(tree=tei.getroot())
+
+        e_title = E.title(authority_dict["title"])
+        print(etree.tostring(e_title).decode("utf-8"))
+
+        for t in work.findall(".//title"):
+            parent = t.getparent()
+            parent.replace(t, e_title)
+            print(etree.tostring(t).decode("utf-8"))
+
+        print(etree.tostring(work).decode("utf-8"))
+        add_work(work, results_xml)
+    write_results(results_xml)
+
+
 ##################################################################
 
 if __name__ == "__main__":
@@ -1358,9 +1395,10 @@ if __name__ == "__main__":
 
     # process_results(skip_finished=True)
 
-    work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0893/phi003/phi0893.phi003.perseus-lat2.xml"
-    perseus_to_file(pathArg=[work], index=-1)
+    work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi1017/phi011/phi1017.phi011.perseus-lat2.xml"
+    # perseus_to_file(pathArg=[work], index=-1)
 
+    update_titles(path=work)
     """pages = get_pages()
 
     index = 595

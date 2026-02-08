@@ -59,7 +59,7 @@ final.frame[is.na(final.frame)] <- 0
 #CAN GET RID OF THIS LATER WHEN I FIX TITLES
 final.frame$title[46] <- "Apocolocynthosis"
 
-cicero_works_nonatt <- c("M. Tulli Ciceronis Orationes", "Librorum de Re Publica Sex", "M. Tulli Ciceronis\nscripta quae manserunt omnia,\nfasc. 43", "de Natura Deorum", "M. Tullii Ciceronis opera quae supersunt omnia", "Tusculanae Disputationes", "M. Tulli Ciceronis Rhetorica, Tomus II", "De Senectute De Amicitia De Divinatione, With An English Translation", "Epistulae ad Familiares")
+cicero_works_nonatt <- c("M. Tulli Ciceronis Orationes", "Librorum de Re Publica Sex", "M. Tulli Ciceronis\nscripta quae manserunt omnia,\nfasc. 43", "de Natura Deorum", "M. Tullii Ciceronis opera quae supersunt omnia", "Tusculanae Disputationes", "M. Tulli Ciceronis Rhetorica, Tomus II", "De Senectute De Amicitia De Divinatione, With An English Translation", "Epistulae ad Familiares", "Letters to and from Quintus")
 
 final.frame <- final.frame[(final.frame$title %in% cicero_works_nonatt) == FALSE,]
 
@@ -71,27 +71,27 @@ final.frame[c("Neg", "Rcp", "Art")] <- NULL
 
 rownames(final.frame) <- final.frame$title
 
-data_kmeans <- final.frame[,2:52]
-data_kmeans$Voc <- NULL
+df_clust <- final.frame[,2:52]
+df_clust$Voc <- NULL
 
-scaled_data <- scale(data_kmeans)
+df_scaled <- scale(df_clust)
 
-kmeans_basic_cluster <- kmeans(scaled_data, centers=4, nstart=20)
+kmeans_basic_cluster <- kmeans(df_scaled, centers=4, nstart=20)
 kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
 kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, final.frame)
 
-hcut_results <- hcut(data_kmeans)
+hcut_results <- hcut(df_clust)
 
 #Visualize ideal number of clusters
-fviz_nbclust(data_kmeans, kmeans, method="wss", nstart=50)
-fviz_nbclust(data_kmeans, hcut, method="wss")
+fviz_nbclust(df_clust, kmeans, method="wss", nstart=50)
+fviz_nbclust(df_clust, hcut, method="wss")
 
 #Plot hierarchy
-fviz_cluster(kmeans_basic_cluster, data = data_kmeans, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
+fviz_cluster(kmeans_basic_cluster, data = df_clust, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
-             ) + geom_text(aes(label=rownames(data_kmeans)))
+             ) + geom_text(aes(label=rownames(df_clust)))
 
 fviz_dend(hcut_results, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
           geom = "point",
