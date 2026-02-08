@@ -639,15 +639,15 @@ def get_title_auth_body(tree: etree._Element) -> dict:
     tei: dict = {"tei": "http://www.tei-c.org/ns/1.0"}
 
     # First, assume no namespace
-    expression: str = "//body"
+    expression: str = ".//body"
 
     # XPath expression for the title
     # TODO Debug this title creator; it didn't work for Pro roscio
-    title: str = "/teiHeader/fileDesc/titleStmt/title/text()"
+    title: str = "./teiHeader/fileDesc/titleStmt/title"
     titleString: str = ""
 
     # XPath expression for the author's name
-    author: str = "/teiHeader/fileDesc/titleStmt/author/text()"
+    author: str = "./teiHeader/fileDesc/titleStmt/author"
     authorString: str = ""
 
     # However, if there is a namespace with the TEI URI (which is given in the 'tei' variable above), we need a tei namespace declared
@@ -662,22 +662,22 @@ def get_title_auth_body(tree: etree._Element) -> dict:
     # We need to test a few things in case the title isn't in the right spot
     titleEl = __run_xpath(title, is_TEI, tree, tei)
 
-    if not titleEl:
-        titleEl = __run_xpath("//biblStruct/monogr/title/text()", is_TEI, tree, tei)
+    if titleEl is None:
+        titleEl = __run_xpath(".//biblStruct/monogr/title", is_TEI, tree, tei)
 
     authorEl = __run_xpath(author, is_TEI, tree, tei)
 
-    if not authorEl:
-        authorEl = __run_xpath("//biblStruct//author/text()", is_TEI, tree, tei)
+    if authorEl is None:
+        authorEl = __run_xpath(".//biblStruct//author", is_TEI, tree, tei)
 
     # If we still don't have a valid author or title node, we give up
-    if titleEl:
-        titleString = titleEl[0]
+    if titleEl is not None:
+        titleString = titleEl.text
     else:
         titleString = ""
 
-    if authorEl:
-        authorString = authorEl[0]
+    if authorEl is not None:
+        authorString = authorEl.text
     else:
         authorString = ""
 
@@ -692,10 +692,11 @@ def __run_xpath(expr: str, is_tei: bool, tree: etree._Element, tei: dict):
         expr = re.sub("/(?=[A-Za-z0-9])", f"/tei:", expr)
         # make sure no namespace is in front of 'text()'
         expr = re.sub("tei:text\\(\\)", "text()", expr)
-        elem = tree.xpath(expr, namespaces=tei)
+        elem = tree.find(expr, namespaces=tei)
         return elem
     else:
-        return tree.xpath(expr)
+        elem = tree.find(expr)
+        return elem
 
 
 def TEI_to_text(pathArg, index) -> list[etree._Element]:
@@ -704,7 +705,7 @@ def TEI_to_text(pathArg, index) -> list[etree._Element]:
     Perseus Digital Library. The function currently assumes the path to the
     Perseus DL is the one on my system:
     C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/perseus-debug.txt.
-    The function can work with no namespace or TEI.
+    The function can work either with no namespace or TEI.
 
     @param pathArg : A list of strings which gives the specific path(s) you want to parse. Type "rand" if you want a random one, or pass "" to NEEDSDOC
     @param index   : An integer index of the location in the file list of the path. Can also be a sequence of integers. Enter -1 for default behavior NEEDSDOC
@@ -762,9 +763,9 @@ def TEI_to_text(pathArg, index) -> list[etree._Element]:
             encoding="utf-8",
         )
         debug.write(path.__str__())
-
+        """
         if len(body):
-            body = body[0]
+            body = body[0]"""
 
         # Now we have the <body> element, let's get the text######################3
 
@@ -1283,6 +1284,8 @@ def process_results(skip_finished=False) -> None:
 
     for work in open_results():
         content = work.find("./content[@type='plaintext']")
+        # DEBUG: GET RID OF THIS!!!!
+        path = work.find("./path")
 
         # If the skip_finished bool is True, we want to skip works where there already is a postagged set.
         if skip_finished and (work.find("./content[@type='postagged']") is not None):
@@ -1299,12 +1302,18 @@ def process_results(skip_finished=False) -> None:
         # Get the title and path for each work to save to each word.
         # This is technically redundant, but makes importing into R easier
         e_title = work.find("./title")
+        try:
+            e_title = e_title.text
+        except AttributeError:
+            e_title = ""
         e_path = work.find("./path")
+        try:
+            e_path = e_path.text
+        except AttributeError:
+            e_path = ""
 
         # Put the text in XML format
-        postagged: etree._Element = doc_to_element(
-            doc, title=e_title.text, path=e_path.text
-        )
+        postagged: etree._Element = doc_to_element(doc, title=e_title, path=e_path)
 
         # save_output("Iteration: " + etree.tostring(results_xml).decode("utf-8") + "\n" * 8)
         add_to_work(postagged, work)
@@ -1338,6 +1347,7 @@ def save_abridged_results():
 if __name__ == "__main__":
     # print(f"Current file path: {Path(__file__).parents[0]}\n")
     # Debug
+
     # print(f"Printing the xml template:\n{prettyprint(xml_template)}")
 
     # save_output(etree.tostring(process_pages_att(), pretty_print=True).decode("utf-8"))
@@ -1346,7 +1356,10 @@ if __name__ == "__main__":
 
     # perseus_to_file(random.sample(get_paths(), 100), index=-1)
 
-    process_results(skip_finished=True)
+    # process_results(skip_finished=True)
+
+    work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0893/phi003/phi0893.phi003.perseus-lat2.xml"
+    perseus_to_file(pathArg=[work], index=-1)
 
     """pages = get_pages()
 
