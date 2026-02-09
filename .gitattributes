@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+atticus-study-results.xml filter=lfs diff=lfs merge=lfs -text
+postagged_only.xml filter=lfs diff=lfs merge=lfs -text
+postagged_only.csv filter=lfs diff=lfs merge=lfs -text

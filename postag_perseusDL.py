@@ -1367,14 +1367,14 @@ def update_titles(path: str = ""):
         authority_dict = get_title_auth_body(tree=tei.getroot())
 
         e_title = E.title(authority_dict["title"])
-        print(etree.tostring(e_title).decode("utf-8"))
+        # print(etree.tostring(e_title).decode("utf-8"))
 
         for t in work.findall(".//title"):
             parent = t.getparent()
             parent.replace(t, e_title)
-            print(etree.tostring(t).decode("utf-8"))
+            # print(etree.tostring(t).decode("utf-8"))
 
-        print(etree.tostring(work).decode("utf-8"))
+        # print(etree.tostring(work).decode("utf-8"))
         add_work(work, results_xml)
     write_results(results_xml)
 
@@ -1395,10 +1395,20 @@ if __name__ == "__main__":
 
     # process_results(skip_finished=True)
 
-    work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi1017/phi011/phi1017.phi011.perseus-lat2.xml"
+    # work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml"
     # perseus_to_file(pathArg=[work], index=-1)
 
-    update_titles(path=work)
+    no_title = []
+    parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
+    for path in get_paths():
+        tei = etree.parse(path, parser)
+        auth_dict = get_title_auth_body(tree=tei.getroot())
+
+        if not auth_dict["title"]:
+            no_title.append(tei)
+
+    print(no_title)
+    # update_titles(path="")
     """pages = get_pages()
 
     index = 595
