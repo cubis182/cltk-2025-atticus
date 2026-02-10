@@ -52,6 +52,7 @@ Solutions required:
 """
 
 import os
+from copy import deepcopy
 import pdfplumber
 import re
 import regex
@@ -602,7 +603,7 @@ def perseus_to_file(pathArg, index) -> None:
     write_results(data_file=data_file)
 
 
-def write_results(data_file: etree._Element) -> None:
+def write_results(data_file: etree._ElementTree) -> None:
     """
     NEEDSDOC
     Docstring for write_results
@@ -618,7 +619,7 @@ def write_results(data_file: etree._Element) -> None:
     #    encoding="utf-8",
     # )
 
-    data_file.getroottree().write(results_file, encoding="utf-8")
+    data_file.write(results_file, encoding="utf-8")
 
 
 def get_paths() -> list[Path]:
@@ -632,7 +633,7 @@ def get_paths() -> list[Path]:
     return list(dir.glob("**/**-lat*.xml"))
 
 
-def get_title_auth_body(tree: etree._Element) -> dict:
+def get_title_auth_body(tree: etree._ElementTree) -> dict:
     """ """
 
     # We need to make sure it's a real TEI file with the xml namespace.
@@ -795,12 +796,13 @@ def TEI_to_text(pathArg, index) -> list[etree._Element]:
 results_file: str = "./atticus-study-results.xml"
 
 
-def open_results() -> etree._Element:
+def open_results() -> etree._ElementTree:
     """
     TODO TEST!
     Returns the root element of the atticus-study-results.xml file"""
+    etree.XMLParser(schema=etree.XMLSchema(file="./results-schema.xsd"))
     tree = etree.parse(results_file)
-    return tree.getroot()
+    return tree
 
 
 ###############################################33
@@ -947,7 +949,7 @@ def add_to_work(
         )
 
 
-def __work_exists__(path: str, data_file: etree._Element = open_results()):
+def __work_exists__(path: str, data_file: etree._ElementTree):
     """
     TODO TEST!
 
@@ -961,7 +963,7 @@ def __work_exists__(path: str, data_file: etree._Element = open_results()):
     """
 
     # Tested with a basic file in the interpreter, algorithm seems to work
-    xpath_expr = f"//work/path[text()='{path}']"
+    xpath_expr = f"/root/work/path[.='{path}']"
     sub_work = data_file.xpath(xpath_expr)
     try:
         sub_work = sub_work[0]
@@ -970,7 +972,7 @@ def __work_exists__(path: str, data_file: etree._Element = open_results()):
     return sub_work.getparent()
 
 
-def work_exists(element: etree._Element, data_file: etree._Element = open_results()):
+def work_exists(element: etree._Element, data_file: etree._ElementTree):
     """
     Checks whether a work element already has a previous version present. If successful, it returns the
 
@@ -1011,7 +1013,7 @@ def remove_duplicates(data: etree._Element):
     @param data: the <root> element of a data to be exported"""
 
 
-def add_work(element: etree._Element, data_file: etree._Element) -> None:
+def add_work(element: etree._Element, data_file: etree._ElementTree) -> None:
     """
     TODO TEST!
     Adds the work to the data_file. If the work already exists, replace it
@@ -1027,7 +1029,8 @@ def add_work(element: etree._Element, data_file: etree._Element) -> None:
         parent: etree._Element = existing_work.getparent()
         parent.replace(existing_work, element)
     else:
-        data_file.append(element)
+        root = data_file.find("/root")
+        root.append(element)
 
 
 def automatic_validation() -> None:
@@ -1280,11 +1283,11 @@ def process_results(skip_finished=False) -> None:
     """
 
     # Get every work in the results page
-    results_xml: etree._Element = open_results()
+    results_xml: etree._ElementTree = open_results()
 
     nlp = NLP("lati1261", backend="stanza")
 
-    for work in open_results():
+    for work in results_xml.xpath("/root/work"):
         content = work.find("./content[@type='plaintext']")
         # DEBUG: GET RID OF THIS!!!!
         path = work.find("./path")
@@ -1344,10 +1347,12 @@ def save_abridged_results():
     rootTree.write("./postagged_only.xml", encoding="utf-8")
 
 
-def update_titles(path: str = ""):
+def update_info(mode: str, path: str = ""):
     f"""
     This function goes through each <work> in {results_file}, replacing the title along the way
 
+    :param mode: Either "title" or "author", depending on what needs replacing
+    :type mode: str
     :param path: Optional, mainly used for debugging. Allows picking a single work, especially a troublesome one.
     :type path: str
     """
@@ -1355,7 +1360,7 @@ def update_titles(path: str = ""):
     results_xml = open_results()
 
     if path:
-        works = [results_xml.find(f".//work[path = '{path}']")]
+        works = results_xml.xpath(f"/root/work[./path = {path}]")
     else:
         works = results_xml.findall(".//work")
 
@@ -1366,16 +1371,26 @@ def update_titles(path: str = ""):
         # Get the root of the tree and pass it to the function for getting the title
         authority_dict = get_title_auth_body(tree=tei.getroot())
 
-        e_title = E.title(authority_dict["title"])
+        e = E.title(authority_dict[mode])
         # print(etree.tostring(e_title).decode("utf-8"))
 
-        for t in work.findall(".//title"):
-            parent = t.getparent()
-            parent.replace(t, e_title)
+        # title or author
+        titles = [t for t in work.findall(f".//{mode}")]
+        for t in range(0, len(titles)):
+            e_title = deepcopy(e)
+            parent = titles[t].getparent()
+            parent.replace(titles[t], e_title)
+            add_work(work, results_xml)
+            pass
+            # debug_work = etree.tostring(work, pretty_print=True).decode("utf-8")
+            # debug_results = etree.tostring(results_xml, pretty_print=True).decode("utf-8")
             # print(etree.tostring(t).decode("utf-8"))
 
         # print(etree.tostring(work).decode("utf-8"))
-        add_work(work, results_xml)
+        # debug_work = etree.tostring(work, pretty_print=True).decode("utf-8")
+        # debug_results = etree.tostring(results_xml, pretty_print=True).decode("utf-8")
+
+        # save_output(etree.tostring(results_xml, pretty_print=True).decode("utf-8"))
     write_results(results_xml)
 
 
@@ -1398,22 +1413,71 @@ if __name__ == "__main__":
     # work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml"
     # perseus_to_file(pathArg=[work], index=-1)
 
+    # save_abridged_results()
+
+    """
+    results_xml = open_results()
+
+    works = results_xml.findall(".//work")
+
+    parser = etree.XMLParser(resolve_entities=False)
+
+    for work in works:
+        e_path = work.find("path")
+
+        # Need this exception because the path to the Letters to Atticus can't be resolved
+        try:
+            tei = etree.parse(e_path.text, parser)
+        except OSError:
+            continue
+
+        # Get the root of the tree and pass it to the function for getting the title
+        authority_dict = get_title_auth_body(tree=tei.getroot())
+
+        e = E.title(authority_dict["title"])
+        # print(etree.tostring(e_title).decode("utf-8"))
+
+        titles = [t for t in work.findall(".//title")]
+        for t in range(0, len(titles)):
+            e_title = deepcopy(e)
+            parent = titles[t].getparent()
+            parent.replace(titles[t], e_title)
+        add_work(work, results_xml)
+        pass
+        # debug_work = etree.tostring(work, pretty_print=True).decode("utf-8")
+        # debug_results = etree.tostring(results_xml, pretty_print=True).decode("utf-8")
+        # print(etree.tostring(t).decode("utf-8"))
+
+        # print(etree.tostring(work).decode("utf-8"))
+        # debug_work = etree.tostring(work, pretty_print=True).decode("utf-8")
+        # debug_results = etree.tostring(results_xml, pretty_print=True).decode("utf-8")
+
+        # save_output(etree.tostring(results_xml, pretty_print=True).decode("utf-8"))
+    write_results(results_xml)"""
+
     no_title = []
+    titles = []
     parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
     for path in get_paths():
         tei = etree.parse(path, parser)
         auth_dict = get_title_auth_body(tree=tei.getroot())
 
-        if not auth_dict["title"]:
+        if not auth_dict["author"]:
             no_title.append(tei)
+        else:
+            titles.append(auth_dict["title"])
 
     print(no_title)
+    print(f"Titles: \n {'\n'.join(titles)}")
+
     # update_titles(path="")
+
     """pages = get_pages()
 
     index = 595
     print(test_formatting(index=index))
-    print(clean_text(pages[index]))"""
+    print(clean_text(pages[index]))
+    
 
     # save_pages_att(process_pages_att())
 
@@ -1421,7 +1485,9 @@ if __name__ == "__main__":
 
     # save_abridged_results()
 
-    """perseus_to_file(
+    """
+    """
+    perseus_to_file(
         pathArg="rand",
         index=-1,
     )

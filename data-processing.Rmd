@@ -53,13 +53,24 @@ editor. Consequently, unlike* Knit*,* Preview\* does not run any R code
 chunks. Instead, the output of the chunk when it was last run in the
 editor is displayed.\*
 
+# Data Preparation
+
 ```{r Libraries}
 
+# install.packages("factoextra")
+# install.packages("dplyr")
+# install.packages("ggrepel")
+
 library(factoextra)
+library(dplyr)
+library(ggrepel)
 ```
 
+(For the above ggrepel library, see <https://github.com/slowkow/ggrepel>
+
 ```{r Get postagged_only.csv. Big data!}
-data <- read.csv("C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/postagged_only.csv", na.strings="")
+setwd("~/GitHub/cltk-2025-atticus")
+data <- read.csv("postagged_only.csv", na.strings="")
 
 summary(data)
 ```
@@ -96,6 +107,9 @@ for (i in 1:length(titles)) {
     }
   }
 }
+
+#temporary measure to deal with missing data
+final.frame <- final.frame[c(-6,-7),]
 
 #Normalize by number of words in each work
 for (i in 2:length(final.frame[1,])) {
@@ -138,18 +152,26 @@ shorten them to 12 characters max.
 #Clean up NAs and filter out Cicero's works that are not the Letters to Atticus
 final.frame[is.na(final.frame)] <- 0
 
+#Add a number to make
+
 #CAN GET RID OF THIS LATER WHEN I FIX TITLES
 final.frame$title[46] <- "Apocolocyntosis"
 #final.frame <- final.frame[grepl("Horace", final.frame$title) == FALSE,]
 
-cicero_works_nonatt <- c("M. Tulli Ciceronis Orationes", "Librorum de Re Publica Sex", "M. Tulli Ciceronis\nscripta quae manserunt omnia,\nfasc. 43", "de Natura Deorum", "M. Tullii Ciceronis opera quae supersunt omnia", "Tusculanae Disputationes", "M. Tulli Ciceronis Rhetorica, Tomus II", "De Senectute De Amicitia De Divinatione, With An English Translation", "Epistulae ad Familiares", "Letters to and from Quintus")
+#cicero_works_nonatt <- c("M. Tulli Ciceronis Orationes", "Librorum de Re Publica Sex", "M. Tulli Ciceronis\nscripta quae manserunt omnia,\nfasc. 43", "de Natura Deorum", "M. Tullii Ciceronis opera quae supersunt omnia", "Tusculanae Disputationes", "M. Tulli Ciceronis Rhetorica, Tomus II", "De Senectute De Amicitia De Divinatione, With An English Translation", "Epistulae ad Familiares", "Letters to and from Quintus")
 
-final.frame <- final.frame[(final.frame$title %in% cicero_works_nonatt) == FALSE,]
+#final.frame <- final.frame[(final.frame$title %in% cicero_works_nonatt) == FALSE,]
+
 
 #These values give NA, cause issues
 final.frame[c("Neg", "Rcp", "Art")] <- NULL
 
+for (i in 1:length(final.frame$title)) {
+  final.frame$title[i] <- paste(as.character(i), final.frame$title[i])
+}
+
 rownames(final.frame) <- final.frame$title
+final.frame$title <- lapply(X=final.frame$title, FUN=substr, start=1, stop=12)
 rownames(final.frame) <- lapply(X=rownames(final.frame), FUN=substr, start=1, stop=12)
 
 ```
@@ -164,8 +186,35 @@ create two variables. **df_clust** isn't scaled, and **df_scaled** is.
 ```{r df_clust & df_scaled}
 
 df_clust <- final.frame[,2:52]
+#df_clust <- slice_sample(df_clust, n=45)
 
 df_scaled <- scale(df_clust)
+```
+
+# Analysis
+
+First, to get some of the formatting predefined:
+
+```{r}
+
+#Add this with the + operator to fviz_cluster plots. @param data is the original dataset used for cluster analysis (df_clust in the first case)
+cluster_labels <- function(data) {
+    return(geom_text_repel(data = data, aes(label=rownames(data)), vjust="inward", hjust="inward", check_overlap = TRUE, size=3))
+}
+
+#Args for fviz_clust
+palette <- c("#2E9FDF", "#00AFBB", "#E7B800", "red","gray")
+geom <- "point"
+ellipse.type <- "convex"
+ggtheme <- theme_bw()
+
+#Text labels for distance diagrams. @param label is usually the rownames of a data.frame
+distance_labels <- theme(axis.text = element_text(size=5, vjust = 1), margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
+
+#Dendrogram theme
+margin_size <- 10
+dend_theme <- theme(axis.text = element_text(size=1.5, vjust = 1), margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
+
 ```
 
 Time to cluster! The visualization (which I get with fviz_nbclust below)
@@ -176,7 +225,7 @@ in the next code block, it seems that's a good call).
 
 kmeans_basic_cluster <- kmeans(df_scaled, centers=5, nstart=20)
 kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
-kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, final.frame)
+kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_clust)
 
 #TODO ADD SUMMARIES OF THE ABOVE DATA HERE
 
@@ -190,13 +239,21 @@ summary(pca)
 
 fviz_nbclust(df_clust, kmeans, method="wss", nstart=50)
 
-fviz_cluster(kmeans_basic_cluster, data = df_clust, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red","gray"), 
-             geom = "point",
-             ellipse.type = "convex", 
-             ggtheme = theme_bw(),
-             ) + geom_text(aes(label=rownames(df_clust)))
+cluster_main <- fviz_cluster(kmeans_basic_cluster, 
+             data = df_clust, 
+             palette = palette, 
+             geom = geom,
+             ellipse.type = ellipse.type, 
+             ggtheme = ggtheme,
+             ) + cluster_labels(df_clust)
 
 str(kmeans_basic_cluster)
+
+distance <- get_dist(df_scaled)
+fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07")) + distance_labels
+
+ggsave(filename = "Images/Distance plot with main d.f.png", dpi="print")
+
 ```
 
 But it might be a good idea to look at other methods of clustering as
@@ -207,19 +264,19 @@ to try that.
 
 ```{r Hierarchical clustering}
 
-hcut_results <- hcut(df_clust)
+df_clust2 <- df_clust
 
-fviz_nbclust(df_clust, hcut, method="wss")
+hcut_results <- hcut(df_clust2)
 
-margin_size <- 10
+fviz_nbclust(df_clust2, hcut, method="wss")
 
-fviz_dend(hcut_results, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
-          geom = "point",
-          ellipse.type = "convex",
+fviz_dend(hcut_results, palette = palette, 
+          geom = geom,
+          ellipse.type = ellipse.type,
           type = "rectangle",
           #horiz=TRUE,
-          ggtheme = theme_bw(),
-) + geom_point() + coord_cartesian(ylim = c(-2000, 10000)) + theme(margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
+          ggtheme = theme_bw()
+) + geom_point() + coord_cartesian(ylim = c(-2000, 10000)) + dend_theme
 
 ```
 
@@ -231,15 +288,13 @@ hcut_results <- hcut(df_pos)
 
 fviz_nbclust(df_pos, hcut, method="wss")
 
-margin_size <- 10
-
-fviz_dend(hcut_results,  k = 5, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red", "gray"), 
+fviz_dend(hcut_results,  k = 5, palette = palette, 
           geom = "point",
           ellipse.type = "convex",
           type = "rectangle",
           #horiz=TRUE,
           ggtheme = theme_bw(),
-) + geom_point()# + coord_cartesian(ylim = c(-1000, 2100)) + theme(margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
+) + geom_point() + coord_cartesian(ylim = c(-1000, 2100)) + dend_theme
 
 ```
 
@@ -261,11 +316,11 @@ choose <- NULL
 
 fviz_nbclust(df_clust, kmeans, method="wss", nstart=50)
 
-fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_pos, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red", "gray"), 
-             geom = "point",
-             ellipse.type = "convex", 
+fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_pos, palette = palette, 
+             geom = geom,
+             ellipse.type = ellipse.type, 
              ggtheme = theme_bw(),
-             ) + geom_text(aes(label=rownames(df_clust)))
+             ) + geom_text(aes(label=rownames(df_clust), ))
 ```
 
 Note in the following how the Letters to Atticus are quite far away from
@@ -279,9 +334,7 @@ hcut_results <- hcut(df_verb)
 
 fviz_nbclust(df_verb, hcut, method="wss")
 
-margin_size <- 10
-
-fviz_dend(hcut_results, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
+fviz_dend(hcut_results, palette = palette, 
           geom = "point",
           ellipse.type = "convex",
           type = "rectangle",
@@ -308,7 +361,7 @@ choose <- NULL
 
 fviz_nbclust(scaled_verb, kmeans, method="wss", nstart=50)
 
-fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_verb, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red", "gray"), 
+fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_verb, palette = palette, 
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
@@ -327,9 +380,7 @@ hcut_results <- hcut(df_case)
 
 fviz_nbclust(df_case, hcut, method="wss")
 
-margin_size <- 10
-
-fviz_dend(hcut_results, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
+fviz_dend(hcut_results, palette = palette, 
           geom = "point",
           ellipse.type = "convex",
           type = "rectangle",
@@ -337,6 +388,33 @@ fviz_dend(hcut_results, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"),
           ggtheme = theme_bw(),
 ) + geom_point()# + coord_cartesian(ylim = c(-1000, 2100)) + theme(margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
 ```
+
+```{r}
+scaled_case <- scale(df_case)
+kmeans_basic_cluster <- kmeans(scaled_case, centers=6, nstart=20)
+kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
+kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_case)
+
+#TODO ADD SUMMARIES OF THE ABOVE DATA HERE
+
+pca <- prcomp(scaled_case)
+
+summary(pca)
+
+#Visualizations
+
+choose <- NULL
+
+fviz_nbclust(scaled_case, kmeans, method="wss", nstart=50)
+
+fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_case, palette = c(palette, "brown"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             ) + geom_text(aes(label=rownames(df_clust)))
+```
+
+# Misc Tests
 
 I want to understand K-means clustering better, so I'm gonna play around
 with it here
@@ -358,3 +436,50 @@ fviz_cluster(km_result, data = scaled, palette = c("gray", "red"),
              ggtheme = theme_bw(),
              ) 
 ```
+
+And some ggplot2 experiments based on the book. Here's some of my
+playing around with ch. 8.
+
+```{r}
+df <- data.frame(x = 1, y = 3:1, family = c("sans", "serif", "mono"))
+
+df
+
+ggplot(df, aes(x, y)) + 
+  geom_text(aes(label = family, family = family))
+
+fviz_cluster(kmeans_basic_cluster, data = df_clust, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red","gray"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             ) + geom_text_repel(data = df_clust, aes(label=rownames(df_clust)), vjust="inward", hjust="inward", check_overlap = TRUE, size=3)
+
+fviz_dend(hcut_results, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
+          geom = "point",
+          ellipse.type = "convex",
+          type = "rectangle",
+          #type = "phylogenic",
+          #repel = TRUE,
+          rect = TRUE,
+          cex = 0.4,
+          ggtheme = theme_bw()
+)
+
+fviz_dend(hcut_results, k=4, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
+          ellipse.type = "convex",
+          type = "phylogenic",
+          repel = TRUE,
+          cex = 0.7,
+          ggtheme = theme_bw()
+)
+
+```
+
+Some crucial notes on the previous section:
+
+-   Adding the check_overlap argument to geom_text() in fviz_cluster()
+    is very useful. It removes overlapping labels, privileging those
+    that are higher in the data frame (meaning the letters to Atticus
+    are usually visible)
+
+-   Reduce cex to 0.7 for readability
