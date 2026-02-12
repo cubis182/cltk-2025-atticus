@@ -198,9 +198,7 @@ First, to get some of the formatting predefined:
 ```{r}
 
 #Add this with the + operator to fviz_cluster plots. @param data is the original dataset used for cluster analysis (df_clust in the first case)
-cluster_labels <- function(data) {
-    return(geom_text_repel(data = data, aes(label=rownames(data)), vjust="inward", hjust="inward", check_overlap = TRUE, size=3))
-}
+cluster_labels <- geom_text_repel(aes(label=rownames(data)), vjust="inward", hjust="inward", max.overlaps = 20, size=3)
 
 #Args for fviz_clust
 palette <- c("#2E9FDF", "#00AFBB", "#E7B800", "red","gray")
@@ -209,10 +207,11 @@ ellipse.type <- "convex"
 ggtheme <- theme_bw()
 
 #Text labels for distance diagrams. @param label is usually the rownames of a data.frame
+margin_size <- 10
 distance_labels <- theme(axis.text = element_text(size=5, vjust = 1), margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
 
 #Dendrogram theme
-margin_size <- 10
+
 dend_theme <- theme(axis.text = element_text(size=1.5, vjust = 1), margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
 
 ```
@@ -223,7 +222,7 @@ in the next code block, it seems that's a good call).
 
 ```{r K-means clustering}
 
-kmeans_basic_cluster <- kmeans(df_scaled, centers=5, nstart=20)
+kmeans_basic_cluster <- kmeans(df_scaled, centers=4, nstart=20)
 kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
 kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_clust)
 
@@ -245,7 +244,8 @@ cluster_main <- fviz_cluster(kmeans_basic_cluster,
              geom = geom,
              ellipse.type = ellipse.type, 
              ggtheme = ggtheme,
-             ) + cluster_labels(df_clust)
+             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=3, )
+cluster_main
 
 str(kmeans_basic_cluster)
 
@@ -269,6 +269,8 @@ df_clust2 <- df_clust
 hcut_results <- hcut(df_clust2)
 
 fviz_nbclust(df_clust2, hcut, method="wss")
+fviz_nbclust(df_clust2, hcut, method = "silhouette")
+fviz_nbclust(df_clust2, hcut, method="gap_stat")
 
 fviz_dend(hcut_results, palette = palette, 
           geom = geom,
@@ -452,7 +454,7 @@ fviz_cluster(kmeans_basic_cluster, data = df_clust, palette = c("#2E9FDF", "#00A
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
-             ) + geom_text_repel(data = df_clust, aes(label=rownames(df_clust)), vjust="inward", hjust="inward", check_overlap = TRUE, size=3)
+             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", check_overlap = TRUE, size=3)
 
 fviz_dend(hcut_results, palette = c("#2E9FDF", "#00AFBB", "#E7B800", "red"), 
           geom = "point",
@@ -483,3 +485,97 @@ Some crucial notes on the previous section:
     are usually visible)
 
 -   Reduce cex to 0.7 for readability
+
+## How K-Means Clustering Works
+
+K-Means clustering itself is relatively simple. The computer has a set
+of data, and it wants to determine which observations are closer to each
+other than another.
+
+Let's first imagine we're talking about actual distance
+
+| Point | X Coordinate | Y Coordinate |
+|-------|--------------|--------------|
+| A     | 1            | 0            |
+| B     | 2            | 0            |
+| C     | 1            | 10           |
+| D     | 2            | 10           |
+| E     | 3            | 10           |
+
+Let's graph these points:
+
+```{r}
+
+df <- data.frame(X.Coordinate = c(1,2,1,2,3), Y.Coordinate = c(0, 0, 10, 10, 10), row.names = LETTERS[1:5])
+
+ggplot(data = df, aes(x = X.Coordinate, y = Y.Coordinate)) + geom_point()
+```
+
+Okay, so we want the computer to recognize that there are two groups of
+points close together, the ones at the top and the bottom.
+
+The K-means algorithm lets the computer recognize there are two
+clusters.
+
+```{r}
+km <- kmeans(df, centers = 2, nstart = 5)
+
+fviz_cluster(km, data = df)
+```
+
+But we're not looking at distances, we're looking at data. However, we
+can apply the same method to data that doesn't represent an actual
+distance.
+
+Let's say we have a bunch of students, and each take two classes. We
+want to sort the students into groups, but how do we do that when they
+have two grades in different classes? We could do it by eye, but what if
+they were taking 4 classes? 5 classes? How can we objectively sort them
+into groups?
+
+Starting with the simplest case, here are some grades:
+
+| Student | English | Math |
+|---------|---------|------|
+| Sally   | 95      | 89   |
+| Susan   | 96      | 72   |
+| Sam     | 55      | 78   |
+| Shelly  | 76      | 75   |
+| Stu     | 40      | 96   |
+
+We can plot these values in space, even though they are
+
+```{r}
+
+df <- data.frame(English = c(95, 96, 55, 76, 40), Math = c(89, 72, 78, 75, 96), row.names = c("Sally", "Susan", "Sam", "Shelly", "Stu"))
+
+ggplot(df, aes(x = English, y = Math)) + geom_point() + geom_text(aes(label = rownames(df)), nudge_y = -2)
+```
+
+Well, let's do the same clustering algorithm again.
+
+NOTE: I tried it again without scaling, the results are similar, but
+different. Now, Stu is matched up with Sam. (The eagle-eyed among you
+might notice there's an extra step in here. If you're curious, we needed
+to scale the values (subtract the mean and divide by the standard
+deviation) so that they're comparable with each other.)
+
+```{r}
+
+#scaled_df = scale(df)
+
+km <- kmeans(df, centers = 2, nstart = 2)
+
+fviz_cluster(km, data = df)
+```
+
+Notice how the other students are similar to each other because they're
+scores in their two classes are pretty close together. Stu, however, has
+one high and one low value (he really doesn't like English), so he's
+very different from the others.
+
+R is great because it also handles data with more than two dimensions.
+If each student had many classes (Math, English, History, Science,
+Music, Art), then we could use principal component analysis to plot
+differences between these datasets in 2D space. That way, K-means works
+even for large datasets.

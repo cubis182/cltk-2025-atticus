@@ -857,6 +857,7 @@ def validate_result(element: etree._Element) -> bool:
         # Only returns True is the assertValid function doesn't raise an exception
         return True
     except etree.DocumentInvalid as e:
+        save_output(etree.tostring(local_template))
         print(f"Issues with validation: {e.args}")
         return False
 
@@ -1029,7 +1030,7 @@ def add_work(element: etree._Element, data_file: etree._ElementTree) -> None:
         parent: etree._Element = existing_work.getparent()
         parent.replace(existing_work, element)
     else:
-        root = data_file.find("/root")
+        root = data_file.getroot()
         root.append(element)
 
 
@@ -1189,7 +1190,9 @@ def process_text(text: str, nlp: NLP) -> types.Doc:
     return doc
 
 
-def doc_to_element(tagged: types.Doc, title: str, path: str) -> etree._Element:
+def doc_to_element(
+    tagged: types.Doc, title: str, author: str, path: str
+) -> etree._Element:
     """
     Docstring for doc_to_element
     This function takes the sentence and word classes from an NLP and placed them in
@@ -1223,6 +1226,7 @@ def doc_to_element(tagged: types.Doc, title: str, path: str) -> etree._Element:
 
             # Add the title and path
             w_elem.append(E.title(title))
+            w_elem.append(E.author(author))
             w_elem.append(E.path(path))
 
             # Add the word form
@@ -1273,7 +1277,7 @@ def postag_validation(tagged: NLP) -> None:
     pass
 
 
-def process_results(skip_finished=False) -> None:
+def process_results(skip_finished=False, path="") -> None:
     f"""
     Docstring for process_results
     This function takes the results file, {results_file}, and adds a postagged content element for each one
@@ -1287,7 +1291,12 @@ def process_results(skip_finished=False) -> None:
 
     nlp = NLP("lati1261", backend="stanza")
 
-    for work in results_xml.xpath("/root/work"):
+    if path != "":
+        works = results_xml.xpath(f"/root/work[./path = '{path}']")
+    else:
+        works = results_xml.xpath("/root/work")
+
+    for work in works:
         content = work.find("./content[@type='plaintext']")
         # DEBUG: GET RID OF THIS!!!!
         path = work.find("./path")
@@ -1308,17 +1317,24 @@ def process_results(skip_finished=False) -> None:
         # This is technically redundant, but makes importing into R easier
         e_title = work.find("./title")
         try:
-            e_title = e_title.text
+            e_title = str(e_title.text)
         except AttributeError:
             e_title = ""
+        e_author = work.find("./author")
+        try:
+            e_author = str(e_author.text)
+        except AttributeError:
+            e_author = ""
         e_path = work.find("./path")
         try:
-            e_path = e_path.text
+            e_path = str(e_path.text)
         except AttributeError:
             e_path = ""
 
         # Put the text in XML format
-        postagged: etree._Element = doc_to_element(doc, title=e_title, path=e_path)
+        postagged: etree._Element = doc_to_element(
+            doc, title=e_title, author=e_author, path=e_path
+        )
 
         # save_output("Iteration: " + etree.tostring(results_xml).decode("utf-8") + "\n" * 8)
         add_to_work(postagged, work)
@@ -1406,14 +1422,20 @@ if __name__ == "__main__":
 
     # print(etree.tostring(content))
 
-    # perseus_to_file(random.sample(get_paths(), 100), index=-1)
+    # perseus_to_file(pathArg="", index=-1)
 
-    # process_results(skip_finished=True)
+    # save_pages_att(process_pages_att())
+
+    # process_results(skip_finished=False)
 
     # work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml"
     # perseus_to_file(pathArg=[work], index=-1)
 
-    # save_abridged_results()
+    process_results(
+        skip_finished=False,
+        path="C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi057/phi0474.phi057.perseus-lat1.xml",
+    )
+    save_abridged_results()
 
     """
     results_xml = open_results()
@@ -1455,7 +1477,9 @@ if __name__ == "__main__":
         # save_output(etree.tostring(results_xml, pretty_print=True).decode("utf-8"))
     write_results(results_xml)"""
 
-    no_title = []
+    # update_info(mode="author")
+
+    """no_title = []
     titles = []
     parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
     for path in get_paths():
@@ -1463,12 +1487,12 @@ if __name__ == "__main__":
         auth_dict = get_title_auth_body(tree=tei.getroot())
 
         if not auth_dict["author"]:
-            no_title.append(tei)
+            no_title.append(str(path))
         else:
-            titles.append(auth_dict["title"])
+            titles.append(auth_dict["author"])
 
-    print(no_title)
-    print(f"Titles: \n {'\n'.join(titles)}")
+    print(f"Without authors: \n Error: {'\n'.join(no_title)}")
+    print(f"Authors: \n {'\n'.join(titles)}")"""
 
     # update_titles(path="")
 
@@ -1479,7 +1503,7 @@ if __name__ == "__main__":
     print(clean_text(pages[index]))
     
 
-    # save_pages_att(process_pages_att())
+    
 
     # process_results(skip_finished=False)
 
