@@ -1458,6 +1458,21 @@ def __in_file(string, s: set) -> bool:
 import stanza
 
 
+def feats(s: str):
+    """
+    Helper in csv_postag for getting the stanza features
+
+     :param s: Description
+     :type s: str
+    """
+    l_feats = s.split("|")
+    d = {}
+    for f in l_feats:
+        tok_f = f.split("=")
+        d[tok_f[0]] = tok_f[1]
+    return d
+
+
 def csv_postag(path="", skip_finished=True) -> None:
     """
     Docstring for csv_postag NEEDSDOC
@@ -1481,7 +1496,7 @@ def csv_postag(path="", skip_finished=True) -> None:
     custom_pipeline = stanza.Pipeline(
         "la", processors="tokenize,mwt,pos,lemma", use_gpu=True
     )
-    nlp = NLP(backend="stanza", custom_pipeline=custom_pipeline)
+    # OLD CLTK: nlp = NLP(backend="stanza", custom_pipeline=custom_pipeline)
 
     sPathsRemoved = []
 
@@ -1557,64 +1572,75 @@ def csv_postag(path="", skip_finished=True) -> None:
             s_final_body = remove_invalid_characters(string)
 
             # now that we have the TEI XML, let's parse the body text
-            doc = process_text(s_final_body, nlp)
+            # OLD CLTK: doc = process_text(s_final_body, nlp)
+            doc: stanza.Pipeline = custom_pipeline(s_final_body)
 
-            for word in doc.words:
-                # Skip most punctuation that doesn't break sentences
-                if word.upos.tag != "PUNCT" or word.string in [".", "!", "?"]:
-                    s_form = word.string
+            for s in doc.sentences:
+                for word in s.words:
+                    # Skip most punctuation that doesn't break sentences
+                    if word.upos != "PUNCT" or word.text in [".", "!", "?"]:
+                        # Old CLTK version: s_form = word.string
+                        s_form = word.text
 
-                    s_lemma = word.lemma
+                        s_lemma = word.lemma
 
-                    # Get the tag
-                    tag = word.upos.tag
+                        # Get the tag
+                        # OLD CLTK: tag = word.upos.tag
+                        tag = word.upos
 
-                    # Only get the features we're interested in
-                    features = {}
-                    f_set = [
-                        "Aspect",
-                        "Mood",
-                        "Number",
-                        "Person",
-                        "Tense",
-                        "VerbForm",
-                        "Voice",
-                        "Case",
-                        "PronType",
-                        "Gender",
-                        "Polarity",
-                        "Degree",
-                        "NumType",
-                    ]
-                    try:
-                        w_features = word.features.features
-                        for key in f_set:
-                            try:
-                                features[key] = __proc_feature(
-                                    [val.value for val in w_features if val.key == key]
-                                )
-                            # The next two lines are superfluous, it seems, as we never get a KeyError, but I'll leave them for now
-                            except KeyError:
+                        # Only get the features we're interested in
+                        features = {}
+                        f_set = [
+                            "Aspect",
+                            "Mood",
+                            "Number",
+                            "Person",
+                            "Tense",
+                            "VerbForm",
+                            "Voice",
+                            "Case",
+                            "PronType",
+                            "Gender",
+                            "Polarity",
+                            "Degree",
+                            "NumType",
+                        ]
+                        try:
+                            # OLD CLTK: w_features = word.features.features
+                            w_features = feats(
+                                word.feats
+                            )  # added for new stanza backend
+                            for key in f_set:
+                                try:
+                                    # OLD CLTK: features[key] = __proc_feature(
+                                    #    [val.value for val in w_features if val.key == key]
+                                    # )
+                                    if w_features[key]:
+                                        features[key] = w_features[key]
+                                    else:
+                                        features[key] = ""
+                                # The next two lines are superfluous, it seems, as we never get a KeyError, but I'll leave them for now
+                                except KeyError:
+                                    features[key] = ""
+                        # Some words don't have features, so Python will throw an Attribute Error.
+                        except AttributeError:
+                            for key in f_set:
                                 features[key] = ""
-                    # Some words don't have features, so Python will throw an Attribute Error.
-                    except AttributeError:
-                        for key in f_set:
-                            features[key] = ""
 
-                    # Start putting together the line to write
-                    metadata = [
-                        titleString,
-                        authorString,
-                        p,
-                        s_form,
-                        s_lemma,
-                        tag,
-                    ]  # NOTE: Not only metadata, but also includes the word and the tag
-                    to_write = metadata + [
-                        features[x] for x in f_set
-                    ]  # This didn't need to be a dictionary, but it helps to know that I will always do this in the same order
+                        # Start putting together the line to write
+                        metadata = [
+                            titleString,
+                            authorString,
+                            p,
+                            s_form,
+                            s_lemma,
+                            tag,
+                        ]  # NOTE: Not only metadata, but also includes the word and the tag
+                        to_write = metadata + [
+                            features[x] for x in f_set
+                        ]  # This didn't need to be a dictionary, but it helps to know that I will always do this in the same order
 
-                    writer.writerow(to_write)
+                        writer.writerow(to_write)
 
 
 def __proc_feature(feature):
@@ -1711,7 +1737,10 @@ if __name__ == "__main__":
     # perseus_to_file(pathArg=[work], index=-1)
 
     p = [str(path) for path in get_paths()]
+    p = p[110:-1]
+    p = str(get_paths()[110])
     csv_postag(
-        path=p[110:-1],
-        skip_finished=True,
+        path=p,
+        skip_finished=False,
     )
+    print(p)
