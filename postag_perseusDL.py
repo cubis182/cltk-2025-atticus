@@ -1213,6 +1213,7 @@ def process_text(text: str, nlp: NLP) -> types.Doc:
     :return: Description
     :rtype: NLP from the CLTK for a single work
     """
+
     doc = nlp.analyze(text)
     return doc
 
@@ -1454,7 +1455,10 @@ def __in_file(string, s: set) -> bool:
     return False
 
 
-def csv_postag(path: str = "", skip_finished=True) -> None:
+import stanza
+
+
+def csv_postag(path="", skip_finished=True) -> None:
     """
     Docstring for csv_postag NEEDSDOC
 
@@ -1465,7 +1469,19 @@ def csv_postag(path: str = "", skip_finished=True) -> None:
     """
     paths: list = __get_paths(path)
 
-    nlp = NLP("lati1261", backend="stanza")
+    """
+    2026-02-15 11:46:56 INFO: Using device: cpu
+    2026-02-15 11:46:56 INFO: Loading: tokenize
+    2026-02-15 11:46:59 INFO: Loading: mwt
+    2026-02-15 11:46:59 INFO: Loading: pos
+    2026-02-15 11:47:01 INFO: Loading: lemma
+    2026-02-15 11:47:02 INFO: Loading: depparse
+    """
+    # Add this so we can use the GPU
+    custom_pipeline = stanza.Pipeline(
+        "la", processors="tokenize,mwt,pos,lemma", use_gpu=True
+    )
+    nlp = NLP(backend="stanza", custom_pipeline=custom_pipeline)
 
     sPathsRemoved = []
 
@@ -1694,8 +1710,8 @@ if __name__ == "__main__":
     # work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml"
     # perseus_to_file(pathArg=[work], index=-1)
 
-    p = "C:\\Users\\T470s\\Documents\\GitHub\\canonical-latinLit\\data\\phi1348\\abo018\\phi1348.abo018.perseus-lat2.xml"
+    p = [str(path) for path in get_paths()]
     csv_postag(
-        path="",
+        path=p[110:-1],
         skip_finished=True,
     )
