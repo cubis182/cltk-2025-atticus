@@ -1436,6 +1436,24 @@ def __get_body(path: str) -> str:
     return s_final_body
 
 
+def __in_file(string, s: set) -> bool:
+    """
+    Checks whether a given string is in a file. In this case, it's used in
+    csv_postag to check whether a path is already in it.
+
+    :param string: Description
+    :param file: Description
+    :return: Description
+    :rtype: bool
+    """
+
+    for l in s:
+        if l.find(string) > -1:
+            return True
+
+    return False
+
+
 def csv_postag(path: str = "", skip_finished=True) -> None:
     """
     Docstring for csv_postag NEEDSDOC
@@ -1449,24 +1467,22 @@ def csv_postag(path: str = "", skip_finished=True) -> None:
 
     nlp = NLP("lati1261", backend="stanza")
 
+    sPathsRemoved = []
+
     # If we want to keep a line, we place it in the
     with open(
         results_file, "r", encoding="utf-8", errors="replace", newline=""
     ) as f_read:
+        s: set = set(f_read.read().splitlines())
         with open(
             "./temp.csv", "w", encoding="utf-8", errors="replace", newline=""
         ) as f_write:
             # If we're skipping already finished ones, lets remove paths
             # that we're not going to parse
             if skip_finished:
-                try:
-                    s = f_read.read()
-                except UnicodeDecodeError as e:
-                    print(e.reason)
-                    raise KeyboardInterrupt()
-
                 for p in paths:
-                    if s.find(p) > -1:
+                    if __in_file(p, s):
+                        sPathsRemoved.append(p)
                         paths.remove(p)
             else:
                 wr = csv.writer(f_write)
@@ -1678,9 +1694,8 @@ if __name__ == "__main__":
     # work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml"
     # perseus_to_file(pathArg=[work], index=-1)
 
-    p = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi002/phi0474.phi002.perseus-lat2.xml"
-    p2 = get_paths()[22]
-    p3 = get_paths()[23]
-    print(str(p3))
-
-    csv_postag(path="", skip_finished=True)
+    p = "C:\\Users\\T470s\\Documents\\GitHub\\canonical-latinLit\\data\\phi1348\\abo018\\phi1348.abo018.perseus-lat2.xml"
+    csv_postag(
+        path="",
+        skip_finished=True,
+    )

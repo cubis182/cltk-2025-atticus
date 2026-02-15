@@ -90,7 +90,7 @@ summary(data)
 
 ```{r }
 #Lets get rid of the non-Cicero works now
-data <- data[data$author != "M. Tullius Cicero" | data$title == "Letters to Atticus",]
+data <- data[rowSums(data == 'M. Tullius Cicero', na.rm = TRUE) == 0 | data$title == "Letters to Atticus",]
 
 titles <- unique(data$title)
 num_words <- table(data$title)
@@ -173,11 +173,11 @@ final.frame[is.na(final.frame)] <- 0
 
 #cicero_works_nonatt <- c("M. Tulli Ciceronis Orationes", "Librorum de Re Publica Sex", "M. Tulli Ciceronis\nscripta quae manserunt omnia,\nfasc. 43", "de Natura Deorum", "M. Tullii Ciceronis opera quae supersunt omnia", "Tusculanae Disputationes", "M. Tulli Ciceronis Rhetorica, Tomus II", "De Senectute De Amicitia De Divinatione, With An English Translation", "Epistulae ad Familiares", "Letters to and from Quintus")
 
-#final.frame <- final.frame[(final.frame$title %in% cicero_works_nonatt) == FALSE,]
-
-
-#These values give NA, cause issues
-final.frame[c("Neg", "Rcp", "Art")] <- NULL
+# #final.frame <- final.frame[(final.frame$title %in% cicero_works_nonatt) == FALSE,]
+# 
+# 
+# #These values give NA, cause issues
+# final.frame[c("Neg", "Rcp", "Art")] <- NULL
 
 for (i in 1:length(final.frame$title)) {
   final.frame$title[i] <- paste(as.character(i), final.frame$title[i])
