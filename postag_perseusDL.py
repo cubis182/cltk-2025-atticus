@@ -514,8 +514,8 @@ inval_tags = [
     # "{http://www.tei-c.org/ns/1.0}choice",
 ]
 
-# NOTE For abbreviations, their usage in the Perseus DL is inconsistent. Sometimes <abbr/> surrounds both the abbreviation and the expansion. Other times, the abbreviation is next to the expansion.
-# However, the expansions are consistent, so we'll just get rid of those. I would prefer the expanded forms, but this is cleaner for now.
+# NOTE For abbreviations, their usage in the Perseus DL is inconsistent. Sometimes <abbr/> surrounds both the abbreviation and the exputf-8on. Other times, the abbreviation is next to the exputf-8on.
+# However, the exputf-8ons are consistent, so we'll just get rid of those. I would prefer the expanded forms, but this is cleaner for now.
 
 
 def is_valid_tag(element: etree._Element) -> int:
@@ -758,7 +758,7 @@ def TEI_to_text(pathArg, index) -> list[etree._Element]:
         titleString = authority_dict["title"]
         authorString = authority_dict["author"]
 
-        # Remember, when there are potentially Greek characters, we need encoding set to UTF-8.
+        # Remember, when there are potentially Greek characters, we need encoding set to utf-8.
         # This debug file will store the results before the final version of the program
         debug: io.TextIOWrapper = open(
             "C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/perseus-debug.txt",
@@ -793,7 +793,7 @@ def TEI_to_text(pathArg, index) -> list[etree._Element]:
 
 
 # Store the path to the file with the results here so its globally accessible
-results_file: str = "./atticus-study-results.xml"
+results_file: str = "./atticus-study-results.csv"
 
 
 def open_results() -> etree._ElementTree:
@@ -1034,14 +1034,15 @@ def add_work(element: etree._Element, data_file: etree._ElementTree) -> None:
         root.append(element)
 
 
+"""
 def automatic_validation() -> None:
-    """
+    
     Docstring for automatic_validation
 
     This function goes through the results file specified in open_results() and does tests to validate each work.
 
     Tests:
-    NEEDSDOC"""
+    NEEDSDOC
 
     data_file = open_results()
 
@@ -1085,6 +1086,32 @@ def automatic_validation() -> None:
                         save_output(final_string, "a")
     else:
         save_output("Error! Could not validate results file\n\n", "a")
+"""
+
+
+def automatic_validation():
+
+    path: str = str(choice(get_paths()))
+    with open(path, "r", encoding="utf-8") as file:
+        text = __get_body(path)
+        tokenized = text.split(" ")
+
+        source: str = str(file.read())
+        source = re.sub("\t", "", source)
+
+        source = remove_invalid_characters(source)
+
+        save_output(path + "\n" + ("*" * 25) + "\n\n", "a")
+
+        for i in range(0, 99):
+            index = random.randrange(0, len(tokenized))
+            final_string = ""
+            try:
+                final_string = " ".join(tokenized[index : (index + 4)])
+            except IndexError:
+                final_string = " ".join(tokenized[index:])
+            if not final_string in source:
+                save_output(final_string, "a")
 
 
 # THIS FUNCTION MAY GET NIXED!
@@ -1301,6 +1328,8 @@ def process_results(skip_finished=False, path="") -> None:
         # DEBUG: GET RID OF THIS!!!!
         path = work.find("./path")
 
+        print(f"process_results: Now postagging {str(path.text)}")
+
         # If the skip_finished bool is True, we want to skip works where there already is a postagged set.
         if skip_finished and (work.find("./content[@type='postagged']") is not None):
             continue
@@ -1343,6 +1372,224 @@ def process_results(skip_finished=False, path="") -> None:
         write_results(results_xml)
 
     # write_results(results_xml)
+
+
+def __get_paths(path):  # -> list[str]:
+    """
+    This is a helper function to csv_postag which processes the path argument.
+    If an argument isn't specified, we need to get the full list.
+
+    :return: NEEDSDOC
+    :rtype: list[str]
+    """
+
+    # Check whether the path argument was given and whether it's a valid value
+    # If the pathArg is rand, that means we select a random path.
+    # If the pathArg is the default value, we already got all the paths we need with the get_paths()
+    # If we passed a list of paths to pathArg, we replace paths with that list
+    if path not in ("", "rand"):
+        return [path]
+
+    paths: list[str] = [str(x) for x in get_paths()]
+
+    if path == "":
+        return paths
+    elif isinstance(path, list):
+        return path
+
+
+import csv
+import shutil
+
+
+def __get_body(path: str) -> str:
+    """
+    Helper function for automatic_validation (plan to also incorporate this into
+    csv_postag()). This returns the body text for a TEI file
+
+    :param path: A path to a TEI XML file from the Perseus DL
+    :type path: str
+    """
+    parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
+    tree: etree.ElementTree = etree.parse(path, parser)  # Use path 22 for debugging
+
+    # Get the root of the tree. This variable will eventually hold the tei:body element
+    body: etree._Element = tree.getroot()
+
+    authority_dict = get_title_auth_body(body)
+
+    body = authority_dict["body"]
+
+    if len(body):
+        body = body[0]
+
+    # Now we have the <body> element, let's get the text######################3
+
+    # Add the text for each element, using the get_text() function
+    string: str = ""
+    for element in body.iter():
+        string += get_text(element)
+
+    string = re.sub("\t", "", string)
+
+    s_final_body = remove_invalid_characters(string)
+    return s_final_body
+
+
+def csv_postag(path: str = "", skip_finished=True) -> None:
+    """
+    Docstring for csv_postag NEEDSDOC
+
+    :param path: An optional path of the file to write manually
+    :type path: str
+    :param skip_finished: NEEDSDOC
+    :type skip_finished: bool
+    """
+    paths: list = __get_paths(path)
+
+    nlp = NLP("lati1261", backend="stanza")
+
+    # If we want to keep a line, we place it in the
+    with open(
+        results_file, "r", encoding="utf-8", errors="replace", newline=""
+    ) as f_read:
+        with open(
+            "./temp.csv", "w", encoding="utf-8", errors="replace", newline=""
+        ) as f_write:
+            # If we're skipping already finished ones, lets remove paths
+            # that we're not going to parse
+            if skip_finished:
+                try:
+                    s = f_read.read()
+                except UnicodeDecodeError as e:
+                    print(e.reason)
+                    raise KeyboardInterrupt()
+
+                for p in paths:
+                    if s.find(p) > -1:
+                        paths.remove(p)
+            else:
+                wr = csv.writer(f_write)
+                for l in csv.reader(f_read):
+                    if l[2] not in paths:
+                        wr.writerow(l)
+        if not skip_finished:
+            shutil.copyfile("temp.csv", results_file)
+            os.remove("./temp.csv")
+
+    # Get the csv.writer
+    with open(results_file, "a", encoding="utf-8", errors="replace", newline="") as f:
+        writer = csv.writer(f, escapechar="#")
+
+        l_paths = len(paths)
+        for p in paths:
+            i_paths = paths.index(p)
+
+            print(f"Completion: {i_paths}/{l_paths}")
+            parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
+            tree: etree.ElementTree = etree.parse(
+                p, parser
+            )  # Use path 22 for debugging
+
+            # Get the root of the tree. This variable will eventually hold the tei:body element
+            body: etree._Element = tree.getroot()
+
+            authority_dict = get_title_auth_body(body)
+
+            body = authority_dict["body"]
+            titleString = authority_dict["title"]
+            authorString = authority_dict["author"]
+
+            # Remember, when there are potentially Greek characters, we need encoding set to utf-8.
+            # This debug file will store the results before the final version of the program
+
+            """debug: io.TextIOWrapper = open(
+                "C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/perseus-debug.txt",
+                "w",
+                encoding="utf-8",
+            )
+            debug.write(str(p))"""
+
+            if len(body):
+                body = body[0]
+
+            # Now we have the <body> element, let's get the text######################3
+
+            # Add the text for each element, using the get_text() function
+            string: str = ""
+            for element in body.iter():
+                string += get_text(element)
+
+            string = re.sub("\t", "", string)
+
+            s_final_body = remove_invalid_characters(string)
+
+            # now that we have the TEI XML, let's parse the body text
+            doc = process_text(s_final_body, nlp)
+
+            for word in doc.words:
+                # Skip most punctuation that doesn't break sentences
+                if word.upos.tag != "PUNCT" or word.string in [".", "!", "?"]:
+                    s_form = word.string
+
+                    s_lemma = word.lemma
+
+                    # Get the tag
+                    tag = word.upos.tag
+
+                    # Only get the features we're interested in
+                    features = {}
+                    f_set = [
+                        "Aspect",
+                        "Mood",
+                        "Number",
+                        "Person",
+                        "Tense",
+                        "VerbForm",
+                        "Voice",
+                        "Case",
+                        "PronType",
+                        "Gender",
+                        "Polarity",
+                        "Degree",
+                        "NumType",
+                    ]
+                    try:
+                        w_features = word.features.features
+                        for key in f_set:
+                            try:
+                                features[key] = __proc_feature(
+                                    [val.value for val in w_features if val.key == key]
+                                )
+                            # The next two lines are superfluous, it seems, as we never get a KeyError, but I'll leave them for now
+                            except KeyError:
+                                features[key] = ""
+                    # Some words don't have features, so Python will throw an Attribute Error.
+                    except AttributeError:
+                        for key in f_set:
+                            features[key] = ""
+
+                    # Start putting together the line to write
+                    metadata = [
+                        titleString,
+                        authorString,
+                        p,
+                        s_form,
+                        s_lemma,
+                        tag,
+                    ]  # NOTE: Not only metadata, but also includes the word and the tag
+                    to_write = metadata + [
+                        features[x] for x in f_set
+                    ]  # This didn't need to be a dictionary, but it helps to know that I will always do this in the same order
+
+                    writer.writerow(to_write)
+
+
+def __proc_feature(feature):
+    if not feature:
+        return ""
+    else:
+        return str(feature[0])
 
 
 def save_abridged_results():
@@ -1431,104 +1678,9 @@ if __name__ == "__main__":
     # work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml"
     # perseus_to_file(pathArg=[work], index=-1)
 
-    process_results(
-        skip_finished=False,
-        path="C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi057/phi0474.phi057.perseus-lat1.xml",
-    )
-    save_abridged_results()
+    p = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi002/phi0474.phi002.perseus-lat2.xml"
+    p2 = get_paths()[22]
+    p3 = get_paths()[23]
+    print(str(p3))
 
-    """
-    results_xml = open_results()
-
-    works = results_xml.findall(".//work")
-
-    parser = etree.XMLParser(resolve_entities=False)
-
-    for work in works:
-        e_path = work.find("path")
-
-        # Need this exception because the path to the Letters to Atticus can't be resolved
-        try:
-            tei = etree.parse(e_path.text, parser)
-        except OSError:
-            continue
-
-        # Get the root of the tree and pass it to the function for getting the title
-        authority_dict = get_title_auth_body(tree=tei.getroot())
-
-        e = E.title(authority_dict["title"])
-        # print(etree.tostring(e_title).decode("utf-8"))
-
-        titles = [t for t in work.findall(".//title")]
-        for t in range(0, len(titles)):
-            e_title = deepcopy(e)
-            parent = titles[t].getparent()
-            parent.replace(titles[t], e_title)
-        add_work(work, results_xml)
-        pass
-        # debug_work = etree.tostring(work, pretty_print=True).decode("utf-8")
-        # debug_results = etree.tostring(results_xml, pretty_print=True).decode("utf-8")
-        # print(etree.tostring(t).decode("utf-8"))
-
-        # print(etree.tostring(work).decode("utf-8"))
-        # debug_work = etree.tostring(work, pretty_print=True).decode("utf-8")
-        # debug_results = etree.tostring(results_xml, pretty_print=True).decode("utf-8")
-
-        # save_output(etree.tostring(results_xml, pretty_print=True).decode("utf-8"))
-    write_results(results_xml)"""
-
-    # update_info(mode="author")
-
-    """no_title = []
-    titles = []
-    parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
-    for path in get_paths():
-        tei = etree.parse(path, parser)
-        auth_dict = get_title_auth_body(tree=tei.getroot())
-
-        if not auth_dict["author"]:
-            no_title.append(str(path))
-        else:
-            titles.append(auth_dict["author"])
-
-    print(f"Without authors: \n Error: {'\n'.join(no_title)}")
-    print(f"Authors: \n {'\n'.join(titles)}")"""
-
-    # update_titles(path="")
-
-    """pages = get_pages()
-
-    index = 595
-    print(test_formatting(index=index))
-    print(clean_text(pages[index]))
-    
-
-    
-
-    # process_results(skip_finished=False)
-
-    # save_abridged_results()
-
-    """
-    """
-    perseus_to_file(
-        pathArg="rand",
-        index=-1,
-    )
-
-    data_file = open_results()
-
-    schema: etree.XMLSchema = data_schema
-
-    schema_validated: bool = schema.assertValid(data_file.getroottree())
-
-    automatic_validation()"""
-
-    """
-    CODE TO TEST WHETHER THERE ARE ANY DUPLICATES
-    my_list = get_paths_no_file()
-    indices = [index for index, value in enumerate(my_list) if my_list.count(value) > 1]
-
-    for i in indices:
-        print(my_list[i])
-    """
+    csv_postag(path="", skip_finished=True)

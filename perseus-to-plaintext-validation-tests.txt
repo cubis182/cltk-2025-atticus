@@ -1,0 +1,18 @@
+In this file, I'll record the results of looking at 30 texts and examining every situation where the computer doesn't find the text in the processed text in the original file (see below for that process, it isn't the whole text). That way, any situations where the algorithm puts text out of order or accidentally deletes it get eliminated.
+
+When I say every situation, I take 100 strings of four words at random, and pull all examples where a simple re.match() function doesn't find it in the original TEI file. The TEI file is processed as bare text, so a lot of results aren't problematic, but manual testing is the only way to see.
+
+C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\phi2331\phi020\phi2331.phi020.perseus-lat2.xml:
+    No issues, all 100 parsed correctly
+
+C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\phi0914\phi0017\phi0914.phi0017.perseus-lat3.xml
+    No issues, all 100 parsed correctly
+
+C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\phi0474\phi035\phi0474.phi035.perseus-lat2.xml
+    No issues, all 100 parsed correctly, although review was much longer because there are many regularized forms and notes
+
+C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\phi1348\abo016\phi1348.abo016.perseus-lat2.xml
+    No issues, all 100 parsed correctly. Not many even needed to be reviewed manually.
+
+C:\Users\T470s\Documents\GitHub\canonical-latinLit\data\phi0474\phi014\phi0474.phi014.perseus-lat2.xml
+    No issues, all 100 parsed correctly. Not many even needed to be reviewed manually.

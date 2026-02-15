@@ -70,12 +70,28 @@ library(ggrepel)
 
 ```{r Get postagged_only.csv. Big data!}
 setwd("~/GitHub/cltk-2025-atticus")
-data <- read.csv("postagged_only.csv", na.strings="")
+
+dims <- c("title", "author", "path", "form", "lemma", "tag", "Aspect", "Mood", "Number",
+                        "Person",
+                        "Tense",
+                        "VerbForm",
+                        "Voice",
+                        "Case",
+                        "PronType",
+                        "Gender",
+                        "Polarity",
+                        "Degree",
+                        "NumType")
+
+data <- read.csv("atticus-study-results.csv", na.strings="", col.names = dims)
 
 summary(data)
 ```
 
 ```{r }
+#Lets get rid of the non-Cicero works now
+data <- data[data$author != "M. Tullius Cicero" | data$title == "Letters to Atticus",]
+
 titles <- unique(data$title)
 num_words <- table(data$title)
 final.frame <- data.frame(title=titles)
@@ -96,7 +112,7 @@ and every row is a unique work.
 
 for (i in 1:length(titles)) {
   frame <- data[data$title == titles[i],]
-  frame <- subset(frame, select= c(-form, -path, -NumType))
+  frame <- subset(frame, select= c(-form, -path, -NumType, -author, -lemma))
   for (n in 2:length(frame)) {
     t <- table(frame[,n])
     #t <- prop.table(t)
@@ -107,9 +123,6 @@ for (i in 1:length(titles)) {
     }
   }
 }
-
-#temporary measure to deal with missing data
-final.frame <- final.frame[c(-6,-7),]
 
 #Normalize by number of words in each work
 for (i in 2:length(final.frame[1,])) {
@@ -155,7 +168,7 @@ final.frame[is.na(final.frame)] <- 0
 #Add a number to make
 
 #CAN GET RID OF THIS LATER WHEN I FIX TITLES
-final.frame$title[46] <- "Apocolocyntosis"
+#final.frame$title[46] <- "Apocolocyntosis"
 #final.frame <- final.frame[grepl("Horace", final.frame$title) == FALSE,]
 
 #cicero_works_nonatt <- c("M. Tulli Ciceronis Orationes", "Librorum de Re Publica Sex", "M. Tulli Ciceronis\nscripta quae manserunt omnia,\nfasc. 43", "de Natura Deorum", "M. Tullii Ciceronis opera quae supersunt omnia", "Tusculanae Disputationes", "M. Tulli Ciceronis Rhetorica, Tomus II", "De Senectute De Amicitia De Divinatione, With An English Translation", "Epistulae ad Familiares", "Letters to and from Quintus")
@@ -255,6 +268,25 @@ fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4
 ggsave(filename = "Images/Distance plot with main d.f.png", dpi="print")
 
 ```
+But, let's look at the cluster that contains the letters to Atticus. Maybe a bar chart showing facets of each?
+
+```{r}
+att_clust <- kmeans_basic_df$Clusters[rownames(kmeans_basic_df) == "22 Letters t"]
+
+#df.barplot <- data.frame(names = dimnames(kmeans_basic_df)[[2]][-1], attclust = sapply(X=kmeans_basic_df[kmeans_basic_df$Clusters == att_clust,], sum)[-1])
+
+#df.barplot$poetclust <-  sapply(X=kmeans_basic_df[kmeans_basic_df$Clusters == 2,], sum)[-1]
+
+df.barplot <- data.frame(cluster = 1, var = dimnames(kmeans_basic_df)[[2]][-1], clustersum = sapply(X=kmeans_basic_df[kmeans_basic_df$Clusters == 1,], sum)[-1])
+for (i in 2:max(kmeans_basic_df$Clusters)) {
+  temp <- data.frame(cluster = i, var = dimnames(kmeans_basic_df)[[2]][-1], clustersum = sapply(X=kmeans_basic_df[kmeans_basic_df$Clusters == i,], sum)[-1])
+  df.barplot <- rbind(df.barplot, temp)
+}
+
+
+ggplot(data = df.barplot, aes(var, clustersum)) + facet_wrap(~cluster) + geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
 
 But it might be a good idea to look at other methods of clustering as
 well. The graphs above seem to show that K-means gets some well-defined
