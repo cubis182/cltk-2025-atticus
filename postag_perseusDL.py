@@ -1517,7 +1517,9 @@ def csv_postag(path="", skip_finished=True) -> None:
                         paths.remove(p)
             else:
                 wr = csv.writer(f_write)
-                for l in csv.reader(f_read):
+                f_read.seek(0)  # just to be sure
+                read = csv.reader(f_read)
+                for l in read:
                     if l[2] not in paths:
                         wr.writerow(l)
         if not skip_finished:
