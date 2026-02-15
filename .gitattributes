@@ -3,3 +3,4 @@
 atticus-study-results.xml filter=lfs diff=lfs merge=lfs -text
 postagged_only.xml filter=lfs diff=lfs merge=lfs -text
 postagged_only.csv filter=lfs diff=lfs merge=lfs -text
+atticus-study-results.csv filter=lfs diff=lfs merge=lfs -text
