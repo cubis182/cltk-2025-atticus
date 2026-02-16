@@ -219,13 +219,16 @@ geom <- "point"
 ellipse.type <- "convex"
 ggtheme <- theme_bw()
 
+#K-means
+k <- 5
+
 #Text labels for distance diagrams. @param label is usually the rownames of a data.frame
 margin_size <- 10
 distance_labels <- theme(axis.text = element_text(size=5, vjust = 1), margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
 
 #Dendrogram theme
-
-dend_theme <- theme(axis.text = element_text(size=1.5, vjust = 1), margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
+dend_size <- 0.2
+dend_theme <- theme(axis.text = element_text(size=dend_size, vjust = 1), margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
 
 ```
 
@@ -235,7 +238,7 @@ in the next code block, it seems that's a good call).
 
 ```{r K-means clustering}
 
-kmeans_basic_cluster <- kmeans(df_scaled, centers=4, nstart=20)
+kmeans_basic_cluster <- kmeans(df_scaled, centers=k, nstart=25)
 kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
 kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_clust)
 
@@ -268,7 +271,9 @@ fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4
 ggsave(filename = "Images/Distance plot with main d.f.png", dpi="print")
 
 ```
-But, let's look at the cluster that contains the letters to Atticus. Maybe a bar chart showing facets of each?
+
+But, let's look at the cluster that contains the letters to Atticus.
+Maybe a bar chart showing facets of each?
 
 ```{r}
 att_clust <- kmeans_basic_df$Clusters[rownames(kmeans_basic_df) == "22 Letters t"]
@@ -277,16 +282,27 @@ att_clust <- kmeans_basic_df$Clusters[rownames(kmeans_basic_df) == "22 Letters t
 
 #df.barplot$poetclust <-  sapply(X=kmeans_basic_df[kmeans_basic_df$Clusters == 2,], sum)[-1]
 
-df.barplot <- data.frame(cluster = 1, var = dimnames(kmeans_basic_df)[[2]][-1], clustersum = sapply(X=kmeans_basic_df[kmeans_basic_df$Clusters == 1,], sum)[-1])
+df.barplot <- data.frame(cluster = 1, var = dimnames(kmeans_basic_df)[[2]][-1], clustersum = scale(sapply(X=kmeans_basic_df[kmeans_basic_df$Clusters == 1,], mean)[-1]))
 for (i in 2:max(kmeans_basic_df$Clusters)) {
-  temp <- data.frame(cluster = i, var = dimnames(kmeans_basic_df)[[2]][-1], clustersum = sapply(X=kmeans_basic_df[kmeans_basic_df$Clusters == i,], sum)[-1])
+  temp <- data.frame(cluster = i, var = dimnames(kmeans_basic_df)[[2]][-1], clustersum = scale(sapply(X=kmeans_basic_df[kmeans_basic_df$Clusters == i,], mean)[-1]))
   df.barplot <- rbind(df.barplot, temp)
 }
 
 
-ggplot(data = df.barplot, aes(var, clustersum)) + facet_wrap(~cluster) + geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+ggplot(data = df.barplot, aes(var, clustersum)) + labs(title = "Z-scores of mean number of tags per cluster category") + facet_wrap(~cluster) + geom_col() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=4))
+
+ggsave(filename = "./Images/cluster_vals.png", dpi="print")
 ```
 
+2/15/2026: Interesting to note that all POS's tagged as Singular are
+higher in Cluster 3, which Att. belongs to. Verbs also look farthest
+above the mean in the same cluster, so that is worth investigating as
+well. Present tense is by far the most common in Cluster 3, and it only
+comes close in cluster 5.
+
+-   Cluster 3 contains only comedy, Sulpicia, and the Letters to Atticus
+
+-   
 
 But it might be a good idea to look at other methods of clustering as
 well. The graphs above seem to show that K-means gets some well-defined
@@ -296,7 +312,7 @@ to try that.
 
 ```{r Hierarchical clustering}
 
-df_clust2 <- df_clust
+df_clust2 <- df_clust[sample(nrow(df_clust), 80),]
 
 hcut_results <- hcut(df_clust2)
 
@@ -308,27 +324,34 @@ fviz_dend(hcut_results, palette = palette,
           geom = geom,
           ellipse.type = ellipse.type,
           type = "rectangle",
+          rect=TRUE,
           #horiz=TRUE,
           ggtheme = theme_bw()
 ) + geom_point() + coord_cartesian(ylim = c(-2000, 10000)) + dend_theme
+
+ggsave(filename = "./Images/cluster_all.png", dpi="print")
 
 ```
 
 ```{r Hierarchical clustering just POS}
 
 df_pos <- df_clust[,1:15]
+df_pos <- df_pos[sample(nrow(df_pos), 80),]
 
 hcut_results <- hcut(df_pos)
 
 fviz_nbclust(df_pos, hcut, method="wss")
 
-fviz_dend(hcut_results,  k = 5, palette = palette, 
+fviz_dend(hcut_results,  k = 2, palette = palette, 
           geom = "point",
           ellipse.type = "convex",
           type = "rectangle",
+          rect = TRUE,
           #horiz=TRUE,
           ggtheme = theme_bw(),
 ) + geom_point() + coord_cartesian(ylim = c(-1000, 2100)) + dend_theme
+
+ggsave(filename = "./Images/tree_pos.png", dpi="print")
 
 ```
 
@@ -354,7 +377,9 @@ fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_pos, palette 
              geom = geom,
              ellipse.type = ellipse.type, 
              ggtheme = theme_bw(),
-             ) + geom_text(aes(label=rownames(df_clust), ))
+             ) + geom_text_repel(aes(label = rownames(df_pos)))
+
+ggsave(filename = "./Images/cluster_pos.png", dpi='print')
 ```
 
 Note in the following how the Letters to Atticus are quite far away from
@@ -399,7 +424,7 @@ fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_verb, palette
              geom = "point",
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
-             ) + geom_text(aes(label=rownames(df_clust)))
+             ) + geom_text_repel(aes(label=rownames(df_clust)))
 ```
 
 When looking at Case, it seems that Comedy, Seneca, Petronius, and the
