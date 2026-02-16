@@ -627,7 +627,7 @@ def get_paths() -> list[Path]:
     Returns a list of paths to all Perseus DL Latin texts"""
 
     # path to PerseusDL
-    dir: Path = Path("C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/")
+    dir: Path = Path("./../canonical-latinLit/data/")
 
     # paths to all the files in the corpus, identified by -lat and the .xml extension.
     return list(dir.glob("**/**-lat*.xml"))
@@ -761,7 +761,7 @@ def TEI_to_text(pathArg, index) -> list[etree._Element]:
         # Remember, when there are potentially Greek characters, we need encoding set to utf-8.
         # This debug file will store the results before the final version of the program
         debug: io.TextIOWrapper = open(
-            "C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/perseus-debug.txt",
+            "./perseus-debug.txt",
             "w",
             encoding="utf-8",
         )
@@ -1388,12 +1388,11 @@ def __get_paths(path):  # -> list[str]:
     # If the pathArg is rand, that means we select a random path.
     # If the pathArg is the default value, we already got all the paths we need with the get_paths()
     # If we passed a list of paths to pathArg, we replace paths with that list
-    if path not in ("", "rand"):
+    if path not in ("", "rand") and not isinstance(path, list):
         return [path]
 
-    paths: list[str] = [str(x) for x in get_paths()]
-
     if path == "":
+        paths: list[str] = [str(x) for x in get_paths()]
         return paths
     elif isinstance(path, list):
         return path
@@ -1493,6 +1492,7 @@ def csv_postag(path="", skip_finished=True) -> None:
     2026-02-15 11:47:02 INFO: Loading: depparse
     """
     # Add this so we can use the GPU
+    #NOTE !!! USING THE GPU REQUIRED ME TO INSTALL TORCH THROUGH PIP WITH CUDA 11.8 (SEE INSTALL INSTRUCTIONS ON THEIR WEBSITE FOR MORE)
     custom_pipeline = stanza.Pipeline(
         "la", processors="tokenize,mwt,pos,lemma", use_gpu=True
     )
@@ -1531,10 +1531,12 @@ def csv_postag(path="", skip_finished=True) -> None:
         writer = csv.writer(f, escapechar="#")
 
         l_paths = len(paths)
+        
+        s_docs = []
         for p in paths:
             i_paths = paths.index(p)
 
-            print(f"Completion: {i_paths}/{l_paths}")
+            print(f"Completion of TEI text extraction: {i_paths}/{l_paths}")
             parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
             tree: etree.ElementTree = etree.parse(
                 p, parser
@@ -1573,12 +1575,19 @@ def csv_postag(path="", skip_finished=True) -> None:
 
             s_final_body = remove_invalid_characters(string)
 
+            #s_docs.append(s_final_body)
+        
             # now that we have the TEI XML, let's parse the body text
             # OLD CLTK: doc = process_text(s_final_body, nlp)
-            doc: stanza.Pipeline = custom_pipeline(s_final_body)
+            t1 = datetime.datetime.now()
+            #in_docs = [stanza.Document([], text=d) for d in s_docs] # Wrap each document with a stanza.Document object
+            out_docs = custom_pipeline(s_final_body) # Call the neural pipeline on this list of documents        
+            print(f"Pipeline took {(datetime.datetime.now() - t1).seconds} seconds")
 
-            for s in doc.sentences:
+        
+            for s in out_docs.sentences:
                 for word in s.words:
+                    print(f"Word Completion: {s.words.index(word)}/{len(s.words)}")
                     # Skip most punctuation that doesn't break sentences
                     if word.upos != "PUNCT" or word.text in [".", "!", "?"]:
                         # Old CLTK version: s_form = word.string
@@ -1720,6 +1729,13 @@ def update_info(mode: str, path: str = ""):
 ##################################################################
 
 if __name__ == "__main__":
+    """
+    Note: Install Torch again manually with CUDA 11.8
+
+    POTENTIAL ISSUES:
+    - Works are identified by path. If you switch to a different directory or computer, the algorithm would cease to recognize any 
+    """
+
     # print(f"Current file path: {Path(__file__).parents[0]}\n")
     # Debug
 
@@ -1739,10 +1755,9 @@ if __name__ == "__main__":
     # perseus_to_file(pathArg=[work], index=-1)
 
     p = [str(path) for path in get_paths()]
-    p = p[110:-1]
-    p = str(get_paths()[110])
-    csv_postag(
-        path=p,
-        skip_finished=False,
-    )
+    p = get_paths()[112:-1]
+    p = [str(path) for path in p]
+    
+    csv_postag(path = p, skip_finished = False)
+    
     print(p)
