@@ -1492,7 +1492,7 @@ def csv_postag(path="", skip_finished=True) -> None:
     2026-02-15 11:47:02 INFO: Loading: depparse
     """
     # Add this so we can use the GPU
-    #NOTE !!! USING THE GPU REQUIRED ME TO INSTALL TORCH THROUGH PIP WITH CUDA 11.8 (SEE INSTALL INSTRUCTIONS ON THEIR WEBSITE FOR MORE)
+    # NOTE !!! USING THE GPU REQUIRED ME TO INSTALL TORCH THROUGH PIP WITH CUDA 11.8 (SEE INSTALL INSTRUCTIONS ON THEIR WEBSITE FOR MORE)
     custom_pipeline = stanza.Pipeline(
         "la", processors="tokenize,mwt,pos,lemma", use_gpu=True
     )
@@ -1531,7 +1531,7 @@ def csv_postag(path="", skip_finished=True) -> None:
         writer = csv.writer(f, escapechar="#")
 
         l_paths = len(paths)
-        
+
         s_docs = []
         for p in paths:
             i_paths = paths.index(p)
@@ -1575,16 +1575,17 @@ def csv_postag(path="", skip_finished=True) -> None:
 
             s_final_body = remove_invalid_characters(string)
 
-            #s_docs.append(s_final_body)
-        
+            # s_docs.append(s_final_body)
+
             # now that we have the TEI XML, let's parse the body text
             # OLD CLTK: doc = process_text(s_final_body, nlp)
             t1 = datetime.datetime.now()
-            #in_docs = [stanza.Document([], text=d) for d in s_docs] # Wrap each document with a stanza.Document object
-            out_docs = custom_pipeline(s_final_body) # Call the neural pipeline on this list of documents        
+            # in_docs = [stanza.Document([], text=d) for d in s_docs] # Wrap each document with a stanza.Document object
+            out_docs = custom_pipeline(
+                s_final_body
+            )  # Call the neural pipeline on this list of documents
             print(f"Pipeline took {(datetime.datetime.now() - t1).seconds} seconds")
 
-        
             for s in out_docs.sentences:
                 for word in s.words:
                     print(f"Word Completion: {s.words.index(word)}/{len(s.words)}")
@@ -1726,6 +1727,28 @@ def update_info(mode: str, path: str = ""):
     write_results(results_xml)
 
 
+def modify_titles():
+    """
+    This function goes back through and makes changes to titles
+    Currently, it just works with Ab Urbe Condita
+    """
+    with open(
+        "./atticus-study-results.csv", "r+", encoding="utf-8", errors="ignore"
+    ) as f:
+        f.seek(0)  # Just to be sure...
+        lines = f.readlines()
+
+        f.truncate()
+
+        livy = "ab urbe condita"
+
+        for l in lines:
+            if (l.casefold()).find(livy):
+                # If this is Livy, replace everything before the first comma with "ab urbe condita"
+                lines[lines.index(l)] = livy + l[l.find(",") :]
+            f.write(f"{l}\n")
+
+
 ##################################################################
 
 if __name__ == "__main__":
@@ -1733,7 +1756,7 @@ if __name__ == "__main__":
     Note: Install Torch again manually with CUDA 11.8
 
     POTENTIAL ISSUES:
-    - Works are identified by path. If you switch to a different directory or computer, the algorithm would cease to recognize any 
+    - Works are identified by path. If you switch to a different directory or computer, the algorithm would cease to recognize any
     """
 
     # print(f"Current file path: {Path(__file__).parents[0]}\n")
@@ -1757,7 +1780,7 @@ if __name__ == "__main__":
     p = [str(path) for path in get_paths()]
     p = get_paths()[112:-1]
     p = [str(path) for path in p]
-    
-    csv_postag(path = p, skip_finished = False)
-    
+
+    csv_postag(path=p, skip_finished=False)
+
     print(p)
