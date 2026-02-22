@@ -1472,6 +1472,52 @@ def feats(s: str):
     return d
 
 
+def select_random(tries=1) -> str:
+    """
+    Selects a random line from the results_file. This is for the purpose of QA
+    Asks the user to QA it.
+
+    :param range: Description
+    :return: Description
+    :rtype: str
+    """
+    with open(results_file, "r", encoding="utf-8", errors="ignore") as f:
+        reader = csv.reader(f)
+        lines = [x for x in reader]
+
+        for i in range(0, tries):
+            line = choice(lines)
+
+            f.seek(0)
+            index = lines.index(line)
+
+            # Get the words around it
+            context = ""
+            for n in range(index - 8, index + 7):
+                context += f"{lines[n][3]} "
+
+            line_text = ",".join(line)
+            # Start each with the path and the index in the results file
+            return_line: str = f"{line[2]},{index},{context},"
+            for field in line:
+                print(line_text + "\n\n")
+                print("Context: " + context)
+                print(field)
+                inp = input(
+                    "Please type 'y' if the tag is appropriate, and 'n' if not."
+                )
+                if inp in ["y", "Y"]:
+                    return_line += "1,"
+                else:
+                    return_line += "0,"
+                with open(
+                    "./postag-tests.csv", "a", encoding="utf-8", errors="ignore"
+                ) as results:
+                    results.write(
+                        return_line[:-1]
+                    )  # Remove the last character, because it's a comma
+
+
 def csv_postag(path="", skip_finished=True) -> None:
     """
     Docstring for csv_postag NEEDSDOC
@@ -1777,10 +1823,35 @@ if __name__ == "__main__":
     # work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml"
     # perseus_to_file(pathArg=[work], index=-1)
 
-    p = [str(path) for path in get_paths()]
-    p = get_paths()[112:-1]
-    p = [str(path) for path in p]
+    quint = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi1002/phi001/phi1002.phi001.perseus-lat2.xml"
 
-    csv_postag(path=p, skip_finished=False)
+    parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
+    tree: etree.ElementTree = etree.parse(quint, parser)  # Use path 22 for debugging
 
-    print(p)
+    # Get the root of the tree. This variable will eventually hold the tei:body element
+    body: etree._Element = tree.getroot()
+
+    authority_dict = get_title_auth_body(body)
+
+    body = authority_dict["body"]
+    titleString = authority_dict["title"]
+    authorString = authority_dict["author"]
+
+    if len(body):
+        body = body[0]
+
+    # Now we have the <body> element, let's get the text######################3
+
+    # Add the text for each element, using the get_text() function
+    string: str = ""
+    for element in body.iter():
+        string += get_text(element)
+
+    string = re.sub("\t", "", string)
+
+    s_final_body = remove_invalid_characters(string)
+
+    save_output(s_final_body)
+
+    # select_random()
+    # select_random()

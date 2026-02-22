@@ -236,6 +236,10 @@ df_scaled <- as.data.frame(scale(df_clust))
 First, to get some of the formatting predefined:
 
 ```{r}
+#10 variables to use for analysis. This is based of the work done in the Testing section below
+vars <- c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs")
+df_clust <- df_clust %>% select(all_of(vars))
+df_scaled <- df_scaled %>% select(all_of(vars))
 
 #Add this with the + operator to fviz_cluster plots. @param data is the original dataset used for cluster analysis (df_clust in the first case)
 cluster_labels <- geom_text_repel(aes(label=rownames(data)), vjust="inward", hjust="inward", max.overlaps = 20, size=3)
@@ -297,9 +301,9 @@ amount, looking at the
 
 #Principal component analysis
 
-pca <- prcomp(df_scaled)
+#pca <- prcomp(df_scaled)
 
-summary(pca)
+#summary(pca)
 
 #Visualizations
 
@@ -440,6 +444,10 @@ comes close in cluster 5.
 
 -   Cluster 3 contains only comedy, Sulpicia, and the Letters to Atticus
 
+## CLARA
+
+Clara is another clustering algorithm like
+
 ## AGNES
 
 But it might be a good idea to look at other methods of clustering as
@@ -478,7 +486,10 @@ hcut_results <- hcut(df_clust2, k=k, hc_func = hc_func, hc_method = hc_method) #
 Now, let's do tests to see what the best variables to study are. It
 seems that principal component analysis is the way to go for this.
 
-Here are some of the results of looking at PCA:
+Here are some of the results of looking at PCA. It looks like Person,
+Pronouns, Adjectives, Prepositions, Particles, Personal Pronouns,
+Tenses, and AUX are very important. The Ablative too might be a good
+idea to include
 
 -   Pass one: c("1", "2", "AUX", "Pres", "Part", "Prs") = 0.88916
 
@@ -496,9 +507,24 @@ Here are some of the results of looking at PCA:
     c("2", "PART", "Imp", "Pres", "Part", "Abl") = 0.90210
     ```
 
-It looks like Person, Pronouns, Adjectives, Prepositions, Particles,
-Personal Pronouns, Tenses, and AUX are very important. The Ablative too
-might be a good idea to include
+This last one has the best results, but what if I add a few more? It
+doesn't include Pass, Fut., first person, Prs. I'll try it out in the
+PCA testing section.
+
+c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs")
+
+## Testing
+
+This section is for a variety of tests. I look at which parameters
+generate the tightest clusters in this first section, and then I select
+random variables and see which combinations give the highest Proportion
+of Variance in the first 2 principal components. I use this to try and
+identify the best subset of variables to look at. Then, I use PCA again,
+this time manually looking at the rotations and removing variables which
+have the lowest value. This method actually seems to have less success
+than my try-random-variables method, as the best PoV I could explain was
+in the 70s%, as opposed to the random selection was in the 80s% or even
+around 90%.
 
 ```{r}
 
@@ -650,18 +676,39 @@ sort(cor)
 
 remove(cor)
 
+#Try with just the top 10 variables
+pca <- df_scaled %>% select(NOUN, PRON, Rel, Sub, Dem, Past) %>% prcomp
+summary(pca)
+View(pca$rotation)
+
 pca <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ, -ADV, -Acc, -Loc, -Dat, -Nom) %>% prcomp
 summary(pca)
 View(pca$rotation)
 
-#Try with the same variables as above
-df_test <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ, -ADV, -Acc, -Loc, -Dat, -Nom) 
+pca <- df_scaled %>% select(c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs")) %>% prcomp(rank. = 2)
+summary(pca)
+View(pca$rotation)
 
-fviz_cluster(kmeans(df_test, centers = k, nstart = 50), data=df_test, stand = FALSE, palette = palette, 
+#Try with the same variables as above
+#df_test <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ, -ADV, -Acc, -Loc, -Dat, -Nom) 
+
+#Try this with a new subset of variables
+df_test <- df_scaled %>% select(c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs"))
+
+fviz_cluster(kmeans(df_test, centers = k, nstart = 50), data=df_test, stand = FALSE, palette = c("red", "green", "blue", "purple", "yellow", "magenta", "gray", "cyan"), 
              geom = geom,
              ellipse.type = ellipse.type, 
              ggtheme = ggtheme,
              ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=2) 
+
+km.test <- kmeans(df_test, centers = 8, nstart = 50)
+df.test <- data.frame(clusters = km.test$cluster, df_test)
+df.test$title <- final.frame$title
+
+
+remove(km.test)
+remove(df.test)
+
 
 ggsave(filename = "Images/pca_test_cluster.png", dpi="print")
 ```
@@ -690,8 +737,6 @@ Given the previous section, let's only remove the following items:
 
 -   Neg
 
--   
-
 ```{r}
 fviz_nbclust(df_clust2, hcut, method="wss")
 fviz_nbclust(df_clust2, hcut, method = "silhouette")
@@ -706,14 +751,25 @@ fviz_dend(agnes_results, palette = palette,
           rect=TRUE,
           #horiz=TRUE,
           ggtheme = theme_bw(),
-          cex = cex
+          cex = cex)
 
 
+
+
+```
+
+## POS, VERBS, etc.
+
+Note that these analyses are old, older than when I did my tests with
+PCA. It seems that the variables I've settled on explain the variance
+better than just POS or just Verbs or categories like that.
+
+```{r}
 ## POS, Verbs, Case
 
 
-df_pos <- df_clust[,1:15]
-df_pos <- df_pos[sample(nrow(df_pos), 80),]
+df_pos <- df_clust[,4:15]
+#df_pos <- df_pos[sample(nrow(df_pos), 80),]
 
 hcut_results <- hcut(df_pos)
 
@@ -730,9 +786,6 @@ fviz_dend(hcut_results,  k = 2, palette = palette,
 
 ggsave(filename = "./Images/tree_pos.png", dpi="print")
 
-```
-
-```{r}
 scaled_pos <- scale(df_pos)
 kmeans_basic_cluster <- kmeans(scaled_pos, centers=5, nstart=20)
 kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
@@ -764,7 +817,7 @@ Comedy and Petronius! Unlike the previous, when looking at POS tags.
 
 ```{r Hierarchical Clustering Just Verb info}
 
-df_verb <- df_clust[,34:49]
+df_verb <- df_clust %>% select(`1`, `2`, `3`, Ind, Sub, Imp, Fut, `Inf`, Fin, Pqp, Past, Act, Pass, Part, Prosp, Pres, Perf)
 
 hcut_results <- hcut(df_verb)
 
