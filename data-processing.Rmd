@@ -88,13 +88,23 @@ dims <- c("title", "author", "path", "form", "lemma", "tag", "Aspect", "Mood", "
                         "Degree",
                         "NumType")
 
-data <- read.csv("atticus-study-results.csv", na.strings="", col.names = dims)
+data <- read.csv("atticus-study-results.csv", na.strings="", col.names = dims, stringsAsFactors = TRUE)
 
 summary(data)
 ```
 
-```{r }
-#Lets get rid of the non-Cicero works now
+One thing I want to note is that not every value is relevant. I'll do
+this further below and not here, but I want to go one at a time and see
+whether Degree [c("Abs", "Cmp")], Gender [c("Fem", "Masc", "Neut")], or
+Case (c("Nom", "Acc", "Abl", "Gen", "Dat", "Loc", "Voc", "Abs")) make
+any difference. Some potential issues are also that there are
+redundancies in the variables. If we want to do significance testing, we
+want to know each variable is independent. So, if we get rid of POS
+tags, we should still keep SCONJ, ADP, CCONJ,
+
+```{r}
+#Lets get rid of the non-Cicero works now, but save the Cicero works for comparison
+data.with.cicero <- data
 data <- data[rowSums(data == 'M. Tullius Cicero', na.rm = TRUE) == 0 | data$title == "Letters to Atticus",]
 
 titles <- unique(data$title)
@@ -166,6 +176,17 @@ shorten them to 12 characters max.
 
 ```{r Clean up final.frame}
 
+#Removed punctuation because PCA showed that it was an "important" variable
+final.frame <- subset(final.frame, select = c(-PUNCT, -X, -VERB, -Sing, -Plur))
+
+#Move letters to Atticus to the top
+row.one <- final.frame[final.frame$title %in% c("Letters to Atticus"),]
+other.rows <- final.frame[final.frame$title %in% c("Letters to Atticus") == FALSE,]
+final.frame <- rbind(row.one, other.rows)
+rownames(frame) <- 1:length(frame$title) #Replace the rownames with the new correct number
+remove(other.rows)
+remove(row.one)
+
 
 #Clean up NAs and filter out Cicero's works that are not the Letters to Atticus
 final.frame[is.na(final.frame)] <- 0
@@ -185,12 +206,13 @@ final.frame[is.na(final.frame)] <- 0
 # final.frame[c("Neg", "Rcp", "Art")] <- NULL
 
 for (i in 1:length(final.frame$title)) {
+  final.frame$title <- as.character(final.frame$title)
   final.frame$title[i] <- paste(as.character(i), final.frame$title[i])
 }
 
 rownames(final.frame) <- final.frame$title
-final.frame$title <- lapply(X=final.frame$title, FUN=substr, start=1, stop=12)
-rownames(final.frame) <- lapply(X=rownames(final.frame), FUN=substr, start=1, stop=12)
+final.frame$title <- lapply(X=final.frame$title, FUN=substr, start=1, stop=16)
+rownames(final.frame) <- lapply(X=rownames(final.frame), FUN=substr, start=1, stop=16)
 
 ```
 
@@ -203,10 +225,10 @@ create two variables. **df_clust** isn't scaled, and **df_scaled** is.
 
 ```{r df_clust & df_scaled}
 
-df_clust <- final.frame[,2:52]
+df_clust <- final.frame[,2:length(final.frame)]
 #df_clust <- slice_sample(df_clust, n=45)
 
-df_scaled <- scale(df_clust)
+df_scaled <- as.data.frame(scale(df_clust))
 ```
 
 # Analysis
@@ -225,7 +247,7 @@ ellipse.type <- "convex"
 ggtheme <- theme_bw()
 
 #K-means
-k <- 5
+k <- 4
 
 #Hcut
 hc_func <- "agnes"
@@ -242,6 +264,8 @@ dend_size <- 0.2
 dend_theme <- theme(axis.text = element_text(size=dend_size, vjust = 1), margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
 
 ```
+
+## K-means clustering
 
 Time to cluster! K-means is a good starting point here. I'll check out
 CLARA as well. We'll need to evaluate what's best. Here's the
@@ -262,6 +286,13 @@ kmeans_basic_cluster <- kmeans(df_scaled, centers=k, nstart=25)
 kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
 kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_clust)
 
+```
+
+Let's do our first visualization. Four clusters seems like a reasonable
+amount, looking at the
+
+```{r}
+
 #TODO ADD SUMMARIES OF THE ABOVE DATA HERE
 
 #Principal component analysis
@@ -280,7 +311,7 @@ cluster_main <- fviz_cluster(kmeans_basic_cluster,
              geom = geom,
              ellipse.type = ellipse.type, 
              ggtheme = ggtheme,
-             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=3, )
+             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=2)
 cluster_main
 
 str(kmeans_basic_cluster)
@@ -290,6 +321,93 @@ fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4
 
 ggsave(filename = "Images/Distance plot with main d.f.png", dpi="print")
 
+```
+
+I want to try this graph with the best combo of factors for PCA alone. I
+found that c("2", "PART", "Imp", "Pres", "Part", "Abl") could explain a
+full 90% of the textual variation with the first two principal
+components.
+
+```{r}
+
+df_sub <- df_scaled %>% select("2", PART, Imp, Pres, Part, Abl)
+df_sub_unscaled <- df_clust %>% select("2", PART, Imp, Pres, Part, Abl)
+
+kmeans.res <- kmeans(df_sub, centers = k, nstart = 50)
+
+fviz_nbclust(df_sub, kmeans, method="wss", nstart = 50)
+
+cluster_main <- fviz_cluster(kmeans.res, 
+             data = df_sub, 
+             palette = palette, 
+             geom = geom,
+             ellipse.type = ellipse.type, 
+             ggtheme = ggtheme,
+             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=2)
+cluster_main
+
+ggsave(filename = "Images/six_factors.png", dpi="print")
+
+```
+
+Let's take a look at a data frame with the clusters added.
+
+```{r}
+km.dataframe <- data.frame(clusters = kmeans.res$cluster, df_sub)
+km.dataframe$title <- final.frame$title
+
+km.unscaled <- data.frame(clusters = kmeans.res$cluster, df_sub_unscaled)
+km.unscaled$title <- final.frame$title
+
+get_means <- function(INDEX) {
+  temp <- select(km.unscaled, -title)
+  apply(X=temp[temp$clusters == INDEX,], MARGIN = 2, FUN=mean)
+}
+
+cluster_means <- map(unique(km.unscaled$clusters), get_means)
+cluster_means
+
+remove(df_sub)
+remove(kmeans.res)
+```
+
+So, we have the cluster means for our parameters now
+
+I commented this out because I'm done with it, but I saved the results
+in a data table. Because K-means has an element of randomness, the
+results aren't identical every time, but Hartigan-Wong, the default
+algorithm, either had the lowest or tied for the lowest total wihin sum
+of squares.
+
++-----------+-----------+
+| algorithm | t o       |
+|           | t         |
+| \<chr\>   | .withinss |
+|           |           |
+|           | \<dbl\>   |
++:==========+==========:+
+| H a r     | 3988.635  |
+| t         |           |
+| igan-Wong |           |
++-----------+-----------+
+| Lloyd     | 3989.989  |
++-----------+-----------+
+| Forgy     | 3993.158  |
++-----------+-----------+
+| MacQueen  | 3989.989  |
++-----------+-----------+
+
+```{r}
+
+# 
+# algorithms <- c("Hartigan-Wong", "Lloyd", "Forgy", "MacQueen")
+# 
+# algorithms.tot.withinss <- vector(mode = "double")
+# for (i in 1:length(algorithms)) {
+#   algorithms.tot.withinss[i] <- kmeans(df_scaled, centers=k, nstart=25, algorithm = algorithms[i])$tot.withinss
+# }
+# 
+# data.frame(algorithm = algorithms, tot.withinss = algorithms.tot.withinss)
 ```
 
 But, let's look at the cluster that contains the letters to Atticus.
@@ -322,7 +440,7 @@ comes close in cluster 5.
 
 -   Cluster 3 contains only comedy, Sulpicia, and the Letters to Atticus
 
--   
+## AGNES
 
 But it might be a good idea to look at other methods of clustering as
 well. The graphs above seem to show that K-means gets some well-defined
@@ -354,7 +472,37 @@ df_clust2 <- df_clust #I've commented out the one above because sometimes I want
 
 hcut_results <- hcut(df_clust2, k=k, hc_func = hc_func, hc_method = hc_method) #k is defined in the first section in Analysis
 
-#TESTING WITH AGNES############################
+
+```
+
+Now, let's do tests to see what the best variables to study are. It
+seems that principal component analysis is the way to go for this.
+
+Here are some of the results of looking at PCA:
+
+-   Pass one: c("1", "2", "AUX", "Pres", "Part", "Prs") = 0.88916
+
+-   Pass two: c("1", "2", "PROPN", "Fut", "Fin", "Pass") = 0.87284
+
+-   Pass three: c("1", "2", "3", "AUX", "Pres", "Abl") = 0.88998
+
+-   Pass four: c("1", "ADJ", "SCONJ", "Pres", "Pass", "Prs") = 0.87152
+
+-   Pass five: c("1", "ADP", "Fut", "Pres", "Part", "Pass") = 0.88226
+
+-   
+
+    ```         
+    c("2", "PART", "Imp", "Pres", "Part", "Abl") = 0.90210
+    ```
+
+It looks like Person, Pronouns, Adjectives, Prepositions, Particles,
+Personal Pronouns, Tenses, and AUX are very important. The Ablative too
+might be a good idea to include
+
+```{r}
+
+###TESTING WITH AGNES############################
 # methods to assess
 m <- c( "average", "single", "complete", "ward") #note that 'ward' = hclust's 'ward.D2
 names(m) <- m
@@ -452,11 +600,104 @@ six.sample <- lowest_spread(6)
 
 #############################################
 
+#Now, let's check the pca and see whether we can get a higher value
+
+get_pca <- function(INDEX) {
+  pca.data <- prcomp(df_scaled[,colnames(df_scaled) %in% INDEX])
+  return(summary(pca.data)$importance[3,2])
+}
+
+highest_pca <- function(sample_var) {
+  combination <- combn(colnames(df_scaled), sample_var, simplify = FALSE)
+  combination <- sample(combination, 300)
+  ac_list <- lapply(X=combination, FUN=get_pca)
+  names(ac_list) <- combination
+  ac_vec <- unlist(ac_list)
+  sort(ac_vec, decreasing = TRUE)[1:25]
+}
+
+six.sample <- highest_pca(6)
+six.sample
+
+seven.sample <- highest_pca(7)
+seven.sample
+
+
+```
+
+Now that I've read up a bit more in PCA in R, I know that I can actually
+see the strength of correlation for each individual variable
+
+```{r}
+
+pca <- prcomp(df_scaled) #NOTE: Should try making the rank. argument smaller, maybe 5?
+
+View(pca$rotation)
+
+pca <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM) %>% prcomp
+summary(pca)
+
+View(pca$rotation)
+
+pca <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ) %>% prcomp
+summary(pca)
+View(pca$rotation)
+
+#Combine the correlation strength from the first two principal components, let's see if we can remove more
+cor <- abs(as.data.frame(pca$rotation)$PC1) + abs(as.data.frame(pca$rotation)$PC2)
+names(cor) <- rownames(as.data.frame(pca$rotation))
+sort(cor)
+
+remove(cor)
+
+pca <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ, -ADV, -Acc, -Loc, -Dat, -Nom) %>% prcomp
+summary(pca)
+View(pca$rotation)
+
+#Try with the same variables as above
+df_test <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ, -ADV, -Acc, -Loc, -Dat, -Nom) 
+
+fviz_cluster(kmeans(df_test, centers = k, nstart = 50), data=df_test, stand = FALSE, palette = palette, 
+             geom = geom,
+             ellipse.type = ellipse.type, 
+             ggtheme = ggtheme,
+             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=2) 
+
+ggsave(filename = "Images/pca_test_cluster.png", dpi="print")
+```
+
+Given the previous section, let's only remove the following items:
+
+-   VERB
+
+-   CCONJ
+
+-   X
+
+-   NOUN
+
+-   ADJ
+
+-   Sing
+
+-   Plur
+
+-   Act
+
+-   All cases but Abl
+
+-   Degree
+
+-   Neg
+
+-   
+
+```{r}
 fviz_nbclust(df_clust2, hcut, method="wss")
 fviz_nbclust(df_clust2, hcut, method = "silhouette")
 fviz_nbclust(df_clust2, hcut, method="gap_stat")
 
-agnes_results <- hcut(df_scaled, stand = FALSE, k = 5, hc_func = hc_func, hc_method = hc_method, hc_metric = hc_metric)
+agnes_results <- hcut(df_scaled[,colnames(df_scaled) %in% c("ADP", "2", "Pres", "Fin", "Pass", "Gen")], stand = FALSE, k = 5, hc_func = hc_func, hc_method = hc_method, hc_metric = hc_metric)
 
 fviz_dend(agnes_results, palette = palette, 
           geom = geom,
@@ -466,13 +707,10 @@ fviz_dend(agnes_results, palette = palette,
           #horiz=TRUE,
           ggtheme = theme_bw(),
           cex = cex
-) + geom_point() + coord_cartesian(ylim = c(-2000, 10000)) + dend_theme
 
-ggsave(filename = "./Images/cluster_all.png", dpi="print")
 
-```
+## POS, Verbs, Case
 
-```{r Hierarchical clustering just POS}
 
 df_pos <- df_clust[,1:15]
 df_pos <- df_pos[sample(nrow(df_pos), 80),]
@@ -610,6 +848,28 @@ fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_case, palette
              ellipse.type = "convex", 
              ggtheme = theme_bw(),
              ) + geom_text(aes(label=rownames(df_clust)))
+```
+
+## Notes on Specific Tags
+
+I want to see whether some of my observations from the thesis bear out.
+For example, what if we only look at participles? Here are the lowest 25
+texts by participle count:
+
+```{r}
+final.frame %>% slice_min(Part, n=25) %>% select(title) %>% print(n = 25)
+```
+
+Notice how it's just comedy and the letters to Atticus!!!
+
+But what about other letters? Let's look at Pliny's letters
+
+```{r}
+final.frame %>% 
+  slice_min(Part, n=229) %>% 
+  select(title) %>% 
+  print(n = 229)
+  
 ```
 
 # Misc Tests
