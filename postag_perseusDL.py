@@ -1481,6 +1481,27 @@ def select_random(tries=1) -> str:
     :return: Description
     :rtype: str
     """
+    labs = [
+        "title",
+        "author",
+        "path",
+        "form",
+        "lemma",
+        "tag",
+        "Aspect",
+        "Mood",
+        "Number",
+        "Person",
+        "Tense",
+        "VerbForm",
+        "Voice",
+        "Case",
+        "PronType",
+        "Gender",
+        "Polarity",
+        "Degree",
+        "NumType",
+    ]
     with open(results_file, "r", encoding="utf-8", errors="ignore") as f:
         reader = csv.reader(f)
         lines = [x for x in reader]
@@ -1499,10 +1520,12 @@ def select_random(tries=1) -> str:
             line_text = ",".join(line)
             # Start each with the path and the index in the results file
             return_line: str = f"{line[2]},{index},{context},"
+            index_field = 0
             for field in line:
+
                 print(line_text + "\n\n")
                 print("Context: " + context)
-                print(field)
+                print(f"{labs[index_field]}: {field}")
                 inp = input(
                     "Please type 'y' if the tag is appropriate, and 'n' if not."
                 )
@@ -1510,12 +1533,17 @@ def select_random(tries=1) -> str:
                     return_line += "1,"
                 else:
                     return_line += "0,"
-                with open(
-                    "./postag-tests.csv", "a", encoding="utf-8", errors="ignore"
-                ) as results:
-                    results.write(
-                        return_line[:-1]
-                    )  # Remove the last character, because it's a comma
+
+                index_field += (
+                    1  # Add to the index of the field so we can get the field label
+                )
+
+            with open(
+                "./postag-tests.csv", "a", encoding="utf-8", errors="ignore"
+            ) as results:
+                results.write(
+                    return_line[:-1] + "\n"
+                )  # Remove the last character, because it's a comma
 
 
 def csv_postag(path="", skip_finished=True) -> None:
@@ -1823,35 +1851,4 @@ if __name__ == "__main__":
     # work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml"
     # perseus_to_file(pathArg=[work], index=-1)
 
-    quint = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi1002/phi001/phi1002.phi001.perseus-lat2.xml"
-
-    parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
-    tree: etree.ElementTree = etree.parse(quint, parser)  # Use path 22 for debugging
-
-    # Get the root of the tree. This variable will eventually hold the tei:body element
-    body: etree._Element = tree.getroot()
-
-    authority_dict = get_title_auth_body(body)
-
-    body = authority_dict["body"]
-    titleString = authority_dict["title"]
-    authorString = authority_dict["author"]
-
-    if len(body):
-        body = body[0]
-
-    # Now we have the <body> element, let's get the text######################3
-
-    # Add the text for each element, using the get_text() function
-    string: str = ""
-    for element in body.iter():
-        string += get_text(element)
-
-    string = re.sub("\t", "", string)
-
-    s_final_body = remove_invalid_characters(string)
-
-    save_output(s_final_body)
-
-    # select_random()
-    # select_random()
+    select_random(100)

@@ -293,7 +293,7 @@ kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_clust)
 ```
 
 Let's do our first visualization. Four clusters seems like a reasonable
-amount, looking at the
+amount, looking at the fviz_nbclust results with the wss method.
 
 ```{r}
 
@@ -383,23 +383,23 @@ results aren't identical every time, but Hartigan-Wong, the default
 algorithm, either had the lowest or tied for the lowest total wihin sum
 of squares.
 
-+-----------+-----------+
-| algorithm | t o       |
-|           | t         |
-| \<chr\>   | .withinss |
-|           |           |
-|           | \<dbl\>   |
-+:==========+==========:+
-| H a r     | 3988.635  |
-| t         |           |
-| igan-Wong |           |
-+-----------+-----------+
-| Lloyd     | 3989.989  |
-+-----------+-----------+
-| Forgy     | 3993.158  |
-+-----------+-----------+
-| MacQueen  | 3989.989  |
-+-----------+-----------+
++----------+----------+
+| a        | t o t    |
+| lgorithm | .        |
+|          | withinss |
+| \<chr\>  |          |
+|          | \<dbl\>  |
++:=========+=========:+
+| H a r t  | 3988.635 |
+| i        |          |
+| gan-Wong |          |
++----------+----------+
+| Lloyd    | 3989.989 |
++----------+----------+
+| Forgy    | 3993.158 |
++----------+----------+
+| MacQueen | 3989.989 |
++----------+----------+
 
 ```{r}
 
@@ -446,7 +446,7 @@ comes close in cluster 5.
 
 ## CLARA
 
-Clara is another clustering algorithm like
+Clara is another clustering algorithm like K-means, but which
 
 ## AGNES
 
