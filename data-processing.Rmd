@@ -239,7 +239,9 @@ First, to get some of the formatting predefined:
 #10 variables to use for analysis. This is based of the work done in the Testing section below
 vars <- c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs")
 df_clust <- df_clust %>% select(all_of(vars))
+rownames(df_clust) <- rownames(final.frame)
 df_scaled <- df_scaled %>% select(all_of(vars))
+rownames(df_scaled) <- rownames(df_scaled)
 
 #Add this with the + operator to fviz_cluster plots. @param data is the original dataset used for cluster analysis (df_clust in the first case)
 cluster_labels <- geom_text_repel(aes(label=rownames(data)), vjust="inward", hjust="inward", max.overlaps = 20, size=3)
@@ -324,6 +326,16 @@ distance <- get_dist(df_scaled)
 fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07")) + distance_labels
 
 ggsave(filename = "Images/Distance plot with main d.f.png", dpi="print")
+
+```
+
+The graph above should be the first visualization in the presentation.
+Next, we want to see what sets the Letters and other similar texts apart
+from the others.
+
+```{r}
+pca <- prcomp(kmeans_basic_cluster)
+
 
 ```
 

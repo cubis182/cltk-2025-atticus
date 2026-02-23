@@ -1851,4 +1851,35 @@ if __name__ == "__main__":
     # work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml"
     # perseus_to_file(pathArg=[work], index=-1)
 
-    select_random(100)
+    p = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi1254/phi001/phi1254.phi001.perseus-lat2.xml"
+    parser: etree.XMLParser = etree.XMLParser(resolve_entities=False)
+    tree: etree.ElementTree = etree.parse(p, parser)  # Use path 22 for debugging
+
+    # Get the root of the tree. This variable will eventually hold the tei:body element
+    body: etree._Element = tree.getroot()
+
+    authority_dict = get_title_auth_body(body)
+
+    body = authority_dict["body"]
+    titleString = authority_dict["title"]
+    authorString = authority_dict["author"]
+
+    # Remember, when there are potentially Greek characters, we need encoding set to utf-8.
+    # This debug file will store the results before the final version of the program
+
+    if len(body):
+        body = body[0]
+
+    # Now we have the <body> element, let's get the text######################3
+
+    # Add the text for each element, using the get_text() function
+    string: str = ""
+    for element in body.iter():
+        string += get_text(element)
+
+    string = re.sub("\t", "", string)
+
+    s_final_body = remove_invalid_characters(string)
+    save_output(s_final_body)
+
+    # select_random(100)
