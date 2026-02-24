@@ -333,11 +333,50 @@ The graph above should be the first visualization in the presentation.
 Next, we want to see what sets the Letters and other similar texts apart
 from the others.
 
+The following graph represents the loadings for the X axis of the
+cluster analysis above. The farther we go to one side, the more 1st/2nd
+person verbs, personal pronouns, present/future tense verbs, and
+imperfective aspect verbs there are. Let's talk about what that means.
+
+Person corresponds to a change in tenor accompanied by colloquial texts.
+Tenor, as a term, refers to the author and their relationship to their
+audience. Comedy, letters, and works of Seneca which come very close to
+that cluster have an intimate audience (in the case of Comedy and
+Seneca, this is an affectation. In such a close situation, the goal is
+to both get information from the addressee but also communicate
+information about themselves.
+
+This information about person is fairly obvious, but the situation with
+personal pronouns is less obvious. Latin has no need of personal
+pronouns; the grammars say they tend to be used for emphasis or
+...(*cite Allen & Greenough and Kühner / Stegmann*).
+
+The information about tense is also expected. Speakers in colloquial
+texts have a variety of purposes: asking and answering questions,
+demonstrating their current thoughts and feelings, making plans, and so
+on. These cover a broad range of statements, each of which requires a
+different type of verb (*examples here*).
+
+To sum up, texts on the left-hand side of the graph have a highly
+personal tenor with ....FILL IN HERE, RE-READ BIBER
+
+Texts on the the right-hand side of the cluster graph feature more
+ablative nouns, participles, and passive verbs.
+
 ```{r}
-pca <- prcomp(kmeans_basic_cluster)
+pca <- prcomp(df_scaled)
 
+rotations.df <- as.data.frame(pca$rotation)
 
+rotations <- data.frame(var = rownames(rotations.df), rotations = rotations.df$PC1)
+
+ggplot(rotations, aes(var, rotations)) + geom_col()
+
+#NOTE: I should try this with Act as a variable too. Pass alone might be high because there are a lot of participles and ablative nouns.
 ```
+
+So, we know the correlation here, but I want to know whether these
+correlation values are significant. We want to see
 
 I want to try this graph with the best combo of factors for PCA alone. I
 found that c("2", "PART", "Imp", "Pres", "Part", "Abl") could explain a
@@ -395,23 +434,27 @@ results aren't identical every time, but Hartigan-Wong, the default
 algorithm, either had the lowest or tied for the lowest total wihin sum
 of squares.
 
-+----------+----------+
-| a        | t o t    |
-| lgorithm | .        |
-|          | withinss |
-| \<chr\>  |          |
-|          | \<dbl\>  |
-+:=========+=========:+
-| H a r t  | 3988.635 |
-| i        |          |
-| gan-Wong |          |
-+----------+----------+
-| Lloyd    | 3989.989 |
-+----------+----------+
-| Forgy    | 3993.158 |
-+----------+----------+
-| MacQueen | 3989.989 |
-+----------+----------+
++---------+---------+
+| a       | t o t . |
+| l       | w       |
+| gorithm | ithinss |
+|         |         |
+| \<chr\> | \<dbl\> |
++:========+========:+
+| H a r t | 3       |
+| i       | 988.635 |
+| g       |         |
+| an-Wong |         |
++---------+---------+
+| Lloyd   | 3       |
+|         | 989.989 |
++---------+---------+
+| Forgy   | 3       |
+|         | 993.158 |
++---------+---------+
+| M       | 3       |
+| acQueen | 989.989 |
++---------+---------+
 
 ```{r}
 
@@ -524,6 +567,58 @@ doesn't include Pass, Fut., first person, Prs. I'll try it out in the
 PCA testing section.
 
 c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs")
+
+## Visualization and Significance Testing
+
+```{r}
+#Lets look at boxplots for each cluster:
+#Cluster 4 is Att
+
+kmeans_basic_df$Clusters <- as.factor(kmeans_basic_df$Clusters)
+
+ggplot(kmeans_basic_df, aes(Clusters, X1)) + geom_boxplot()
+
+ggplot(kmeans_basic_df, aes(Clusters, X2)) + geom_boxplot()
+
+ggplot(kmeans_basic_df, aes(Clusters, Prs)) + geom_boxplot()
+
+ggplot(kmeans_basic_df, aes(Clusters, Pres)) + geom_boxplot()
+
+ggplot(kmeans_basic_df, aes(Clusters, PART)) + geom_boxplot()
+
+ggplot(kmeans_basic_df, aes(Clusters, Imp)) + geom_boxplot()
+
+ggplot(kmeans_basic_df, aes(Clusters, Part)) + geom_boxplot()
+
+ggplot(kmeans_basic_df, aes(Clusters, Abl)) + geom_boxplot()
+
+ggplot(kmeans_basic_df, aes(Clusters, Pass)) + geom_boxplot()
+
+ggplot(kmeans_basic_df, aes(Clusters, Fut)) + geom_boxplot()
+
+```
+
+## Lemmas
+
+We want lemmas which are uncommon in all texts but unusually common in
+cluster 4.
+
+First, we need to add cluster labels to data. Use apply?
+kmeans_basic_df\$Clusters[kmeans_basic_df\$title ==
+
+```{r}
+
+kmeans_basic_df$titles <- final.frame$title
+
+get_cluster <- function(title) {
+  return()
+}
+kmeans_basic_df %>% 
+```
+
+For each unique lemma:
+
+1.  Get the
 
 ## Testing
 
