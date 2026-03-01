@@ -107,10 +107,10 @@ want to know each variable is independent. So, if we get rid of POS
 tags, we should still keep SCONJ, ADP, CCONJ,
 
 ```{r}
-#Lets get rid of the non-Cicero works now, but save the Cicero works for comparison
-data.with.cicero <- data
-data <- data[rowSums(data == 'M. Tullius Cicero', na.rm = TRUE) == 0 | data$title == "Letters to Atticus",]
 
+data <- data[rowSums(data == 'M. Tullius Cicero', na.rm = TRUE) == 0 | data$title %in% c("Letters to Atticus"),]
+#data <- data[rowSums(data == 'M. Tullius Cicero', na.rm = TRUE) == 0 | data$title %in% c("Letters to Atticus", "Epistulae ad Familiares", "Letters to and from Brutus", "Letters to and from Quintus"),] #This version includes Cicero's other letters
+ 
 #Rename "Imp" to "Imperative" in mood category
 levels(data$Mood) <- c(levels(data$Mood), "Imperative")
 sequence <- which(data$Mood == "Imp")
@@ -192,13 +192,21 @@ shorten them to 12 characters max.
 #Removed punctuation because PCA showed that it was an "important" variable
 final.frame <- subset(final.frame, select = c(-PUNCT, -X, -VERB, -Sing, -Plur))
 
+#Move Pliny's letters close to the top
+row.one <- final.frame[final.frame$title %in% c("Letters"),]
+other.rows <- final.frame[final.frame$title %in% c("Letters") == FALSE,]
+final.frame <- rbind(row.one, other.rows)
+rownames(final.frame) <- 1:length(final.frame$title)
+
 #Move letters to Atticus to the top
 row.one <- final.frame[final.frame$title %in% c("Letters to Atticus"),]
 other.rows <- final.frame[final.frame$title %in% c("Letters to Atticus") == FALSE,]
 final.frame <- rbind(row.one, other.rows)
-rownames(frame) <- 1:length(frame$title) #Replace the rownames with the new correct number
+rownames(final.frame) <- 1:length(final.frame$title) #Replace the rownames with the new correct number
 remove(other.rows)
 remove(row.one)
+
+
 
 
 #Clean up NAs and filter out Cicero's works that are not the Letters to Atticus
@@ -333,10 +341,10 @@ cluster_main <- fviz_cluster(kmeans_basic_cluster,
              geom = geom,
              ellipse.type = ellipse.type, 
              ggtheme = ggtheme
-             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=2) + labs(x = paste("Dim1", dim1, "(Left = More 1st/2nd person, personal pronouns, Right = More Ablative nouns, Passive Verbs, participles)"), y = paste("Dim2", dim2, "(Up = more particles, Down = fewer particles)"), title = "K-means clustering applied to PHI Latin Texts, k=4") + theme(axis.title = element_text(size = 8))
+             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 14, size=2, seed = 12927) + labs(x = paste("Dim1", dim1, "(Left = More 1st/2nd person, personal pronouns, Right = More Ablative nouns, Passive Verbs, participles)"), y = paste("Dim2", dim2, "(Up = more particles, Down = fewer particles)"), title = "K-means clustering applied to PHI Latin Texts, k=4") + theme(axis.title = element_text(size = 8))
 cluster_main
 
-ggsave(filename = "Images/cluster-diagram-kmeans.png", dpi="print")
+ggsave(filename = "Images/cluster-diagram-kmeans-all-cicero.png", dpi="print")
 
 str(kmeans_basic_cluster)
 
@@ -457,22 +465,22 @@ results aren't identical every time, but Hartigan-Wong, the default
 algorithm, either had the lowest or tied for the lowest total wihin sum
 of squares.
 
-+-------------------+-----------------+
-| a l g orithm      | t o t . w i     |
-|                   | thinss          |
-| \                 |                 |
-| \<chr\>           | \               |
-|                   | \<dbl\>         |
-+:==================+================:+
-| H a r t i g a     | 3 9 88.635      |
-| n-Wong            |                 |
-+-------------------+-----------------+
-| Lloyd             | 3 9 89.989      |
-+-------------------+-----------------+
-| Forgy             | 3 9 93.158      |
-+-------------------+-----------------+
-| M a cQueen        | 3 9 89.989      |
-+-------------------+-----------------+
++------------------+----------------+
+| a l g orithm     | t o t . w i    |
+|                  | thinss         |
+| \                |                |
+| \<chr\>          | \              |
+|                  | \<dbl\>        |
++:=================+===============:+
+| H a r t i g a    | 3 9 88.635     |
+| n-Wong           |                |
++------------------+----------------+
+| Lloyd            | 3 9 89.989     |
++------------------+----------------+
+| Forgy            | 3 9 93.158     |
++------------------+----------------+
+| M a cQueen       | 3 9 89.989     |
++------------------+----------------+
 
 ```{r}
 
@@ -605,7 +613,7 @@ shapiro.test(colloquial.non.att) #on the edge with p = 0.026
 #The distribution of imperatives is not likely to be normally distributed, or the sample is not sufficient. See this ecdf plot:
 plot(ecdf(colloquial.non.att), main = "ECDF plot of Imperatives in cluster 4")
 
-norm_tails(att, colloquial.non.att) #p = 0.00019, upper tail
+norm_tails(att, colloquial.non.att, "Imperfect") #p = 0.00019, upper tail
 boxplot(colloquial.non.att, att, main = "Imperfect verbs")
 
 #The letters to Atticus have fewer imperfective forms than the other colloquial texts (i.e. Comedy)
@@ -638,9 +646,13 @@ print("Participles:")
 att <- cluster4$Part[1] #Atticus is always first
 colloquial.non.att <- cluster4$Part[2:length(cluster4$Part)]
 
+shapiro.test(colloquial.non.att)
 #The number of participles is high, in the upper quartile, but still within range. 85.19% of values are lower than the Letters to Atticus
 
 boxplot(colloquial.non.att, att, main = "Participles")
+
+{hist(colloquial.non.att, main = "Participles")
+  abline(v=att, col="red")}
 
 
 #norm_tails(att, colloquial.non.att)
