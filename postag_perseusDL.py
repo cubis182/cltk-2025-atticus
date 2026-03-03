@@ -314,7 +314,7 @@ def remove_invalid_characters(text: str) -> str:
     )
     text = ".\n".join(split)
 
-    text = re.sub("[-–—]", "", text)
+    text = re.sub("[-–—'\"]", "", text)
 
     return text
 
