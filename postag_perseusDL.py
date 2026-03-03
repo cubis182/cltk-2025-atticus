@@ -314,6 +314,8 @@ def remove_invalid_characters(text: str) -> str:
     )
     text = ".\n".join(split)
 
+    text = re.sub("[-–—]", "", text)
+
     return text
 
 
@@ -1851,8 +1853,4 @@ if __name__ == "__main__":
     # work = "C:/Users/T470s/Documents/GitHub/canonical-latinLit/data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml"
     # perseus_to_file(pathArg=[work], index=-1)
 
-    dir = Path("../canonical-latinLit/data/phi0914")
-    paths = list(dir.glob("./**/*-lat*.xml"))
-
-    for p in paths:
-        csv_postag(p, skip_finished=False)
+    select_random(100)
