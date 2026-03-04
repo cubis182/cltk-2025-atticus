@@ -1,2 +1,0 @@
-NOTE:
-The texts in this folder are still under copyright and are still liable to the same restrictions against distribution as is defined in their respective licenses. These will not be in the final GitHub repository

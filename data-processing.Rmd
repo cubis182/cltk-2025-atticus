@@ -6,52 +6,8 @@ editor_options:
     wrap: 72
 ---
 
-@inproceedings{johnson-etal-2021-classical, title = "The {C}lassical
-{L}anguage {T}oolkit: {A}n {NLP} Framework for Pre-Modern Languages",
-author = "Johnson, Kyle P. and Burns, Patrick J. and Stewart, John and
-Cook, Todd and Besnier, Cl{'e}ment and Mattingly, William J. B.",
-booktitle = "Proceedings of the 59th Annual Meeting of the Association
-for Computational Linguistics and the 11th International Joint
-Conference on Natural Language Processing: System Demonstrations", month
-= aug, year = "2021", address = "Online", publisher = "Association for
-Computational Linguistics", url =
-"<https://aclanthology.org/2021.acl-demo.3>", doi =
-"10.18653/v1/2021.acl-demo.3", pages = "20--29", abstract = "This paper
-announces version 1.0 of the Classical Language Toolkit (CLTK), an NLP
-framework for pre-modern languages. The vast majority of NLP, its
-algorithms and software, is created with assumptions particular to
-living languages, thus neglecting certain important characteristics of
-largely non-spoken historical languages. Further, scholars of pre-modern
-languages often have different goals than those of living-language
-researchers. To fill this void, the CLTK adapts ideas from several
-leading NLP frameworks to create a novel software architecture that
-satisfies the unique needs of pre-modern languages and their
-researchers. Its centerpiece is a modular processing pipeline that
-balances the competing demands of algorithmic diversity with
-pre-configured defaults. The CLTK currently provides pipelines,
-including models, for almost 20 languages.", }
-
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you
 execute code within the notebook, the results appear beneath the code.
-
-Try executing this chunk by clicking the *Run* button within the chunk
-or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
-
-```{r}
-plot(cars)
-```
-
-*Add a new chunk by clicking the* Insert Chunk\* button on the toolbar
-or by pressing *Ctrl+Alt+I*.
-
-When you save the notebook, an HTML file containing the code and output
-will be saved alongside it (click the *Preview* button or press
-*Ctrl+Shift+K* to preview the HTML file).\*
-
-*The preview shows you a rendered HTML copy of the contents of the
-editor. Consequently, unlike* Knit*,* Preview\* does not run any R code
-chunks. Instead, the output of the chunk when it was last run in the
-editor is displayed.\*
 
 # Data Preparation
 
@@ -73,6 +29,7 @@ library(cluster)
 library(combinat)
 library(dendextend)
 library(MASS)
+library(multcomp)
 ```
 
 (For the above ggrepel library, see <https://github.com/slowkow/ggrepel>
@@ -465,20 +422,22 @@ results aren't identical every time, but Hartigan-Wong, the default
 algorithm, either had the lowest or tied for the lowest total wihin sum
 of squares.
 
-+----------------------+--------------------+
-| a l g orithm         | t o t . w i thinss |
-|                      |                    |
-| \                    | \                  |
-| \<chr\>              | \<dbl\>            |
-+:=====================+===================:+
-| H a r t i g a n-Wong | 3 9 88.635         |
-+----------------------+--------------------+
-| Lloyd                | 3 9 89.989         |
-+----------------------+--------------------+
-| Forgy                | 3 9 93.158         |
-+----------------------+--------------------+
-| M a cQueen           | 3 9 89.989         |
-+----------------------+--------------------+
++---------------------+-------------------+
+| a l g orithm        | t o t . w i       |
+|                     | thinss            |
+| \                   |                   |
+| \<chr\>             | \                 |
+|                     | \<dbl\>           |
++:====================+==================:+
+| H a r t i g a       | 3 9 88.635        |
+| n-Wong              |                   |
++---------------------+-------------------+
+| Lloyd               | 3 9 89.989        |
++---------------------+-------------------+
+| Forgy               | 3 9 93.158        |
++---------------------+-------------------+
+| M a cQueen          | 3 9 89.989        |
++---------------------+-------------------+
 
 ```{r}
 
@@ -913,7 +872,7 @@ Cluster 4 compared to all other clusters.
 ```{r}
 
 #install.packages("mulcomp")
-library(multcomp)
+
 
 set.seed(128128)
 lemmas <- sample(unique(data$lemma), 1000)
@@ -1438,7 +1397,7 @@ Let's first imagine we're talking about actual distance
 Let's graph these points:
 
 ```{r}
-library(ggplot2)
+
 
 df <- data.frame(X.Coordinate = c(1,2,1,2,3), Y.Coordinate = c(0, 0, 10, 10, 10), row.names = LETTERS[1:5])
 
@@ -1452,7 +1411,6 @@ The K-means algorithm lets the computer recognize there are two
 clusters.
 
 ```{r}
-library(factoextra)
 km <- kmeans(df, centers = 2, nstart = 5)
 
 fviz_cluster(km, data = df)
@@ -1496,7 +1454,6 @@ to scale the values (subtract the mean and divide by the standard
 deviation) so that they're comparable with each other.)
 
 ```{r}
-library(factoextra)
 #scaled_df = scale(df)
 
 km <- kmeans(df, centers = 2, nstart = 2)
