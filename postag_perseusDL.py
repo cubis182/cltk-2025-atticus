@@ -796,3 +796,5 @@ if __name__ == "__main__":
 
     # For the purpose of QA, I've also added the function "select_random" which selects a random postagged word, presents it to be checked, and saves whether each field was correct or incorrect.
     # I WOULD NOT recommend using this, just because I was pretty lazy designing it. Anything other than "y" or "Y" is interpreted as the parsing being incorrect, requiring you to modify the CSV manually every time you make a mistake.
+
+    select_random(100)

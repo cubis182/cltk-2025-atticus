@@ -1,6 +1,7 @@
 ---
 title: "R Notebook"
 output: html_notebook
+runtime: shiny
 editor_options: 
   markdown: 
     wrap: 72
@@ -8,6 +9,10 @@ editor_options:
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you
 execute code within the notebook, the results appear beneath the code.
+
+```{r include=FALSE}
+knitr::opts_chunk$set(results="hold")
+```
 
 # Data Preparation
 
@@ -32,7 +37,8 @@ library(MASS)
 library(multcomp)
 ```
 
-(For the above ggrepel library, see <https://github.com/slowkow/ggrepel>
+(For the above ggrepel library, see
+<https://github.com/slowkow/ggrepel>)
 
 ```{r Get postagged_only.csv. Big data!}
 setwd("~/GitHub/cltk-2025-atticus")
@@ -145,7 +151,6 @@ Finally, we do what I said above, turning the rownames into the title. I
 shorten them to 12 characters max.
 
 ```{r Clean up final.frame}
-
 #Removed punctuation because PCA showed that it was an "important" variable
 final.frame <- subset(final.frame, select = c(-PUNCT, -X, -VERB, -Sing, -Plur))
 
@@ -201,7 +206,11 @@ from every value and dividing it by the standard deviation to make the
 comparable). However, some do expect the data to be scaled, so lets
 create two variables. **df_clust** isn't scaled, and **df_scaled** is.
 
+This is also where I
+
 ```{r df_clust & df_scaled}
+
+
 
 df_clust <- final.frame[,2:length(final.frame)]
 #df_clust <- slice_sample(df_clust, n=45)
@@ -373,8 +382,8 @@ components.
 
 ```{r}
 
-df_sub <- df_scaled %>% select("2", PART, Imp, Pres, Part, Abl)
-df_sub_unscaled <- df_clust %>% select("2", PART, Imp, Pres, Part, Abl)
+df_sub <- df_scaled %>% dplyr::select(`2`, PART, Imp, Pres, Part, Abl)
+df_sub_unscaled <- df_clust %>% dplyr::select(`2`, PART, Imp, Pres, Part, Abl)
 
 kmeans.res <- kmeans(df_sub, centers = k, nstart = 50)
 
@@ -403,7 +412,7 @@ km.unscaled <- data.frame(clusters = kmeans.res$cluster, df_sub_unscaled)
 km.unscaled$title <- final.frame$title
 
 get_means <- function(INDEX) {
-  temp <- select(km.unscaled, -title)
+  temp <- dplyr::select(km.unscaled, -title)
   apply(X=temp[temp$clusters == INDEX,], MARGIN = 2, FUN=mean)
 }
 
@@ -422,22 +431,22 @@ results aren't identical every time, but Hartigan-Wong, the default
 algorithm, either had the lowest or tied for the lowest total wihin sum
 of squares.
 
-+---------------------+-------------------+
-| a l g orithm        | t o t . w i       |
-|                     | thinss            |
-| \                   |                   |
-| \<chr\>             | \                 |
-|                     | \<dbl\>           |
-+:====================+==================:+
-| H a r t i g a       | 3 9 88.635        |
-| n-Wong              |                   |
-+---------------------+-------------------+
-| Lloyd               | 3 9 89.989        |
-+---------------------+-------------------+
-| Forgy               | 3 9 93.158        |
-+---------------------+-------------------+
-| M a cQueen          | 3 9 89.989        |
-+---------------------+-------------------+
++-------------------+-----------------+
+| a l g orithm      | t o t . w i     |
+|                   | thinss          |
+| \                 |                 |
+| \<chr\>           | \               |
+|                   | \<dbl\>         |
++:==================+================:+
+| H a r t i g a     | 3 9 88.635      |
+| n-Wong            |                 |
++-------------------+-----------------+
+| Lloyd             | 3 9 89.989      |
++-------------------+-----------------+
+| Forgy             | 3 9 93.158      |
++-------------------+-----------------+
+| M a cQueen        | 3 9 89.989      |
++-------------------+-----------------+
 
 ```{r}
 
@@ -845,7 +854,7 @@ First, we need to add cluster labels to data. Use apply?
 kmeans_basic_df\$Clusters[kmeans_basic_df\$title ==
 
 ```{r}
-data.clustered <- data.lemmas[,1:5]
+
 kmeans_basic_df$titles <- as.factor(unlist(final.frame$title))
 
 #Just focus on lemmas that are semi-rare; in this case, the 1,000th to 5,000th most common
@@ -1035,62 +1044,62 @@ Now that I've read up a bit more in PCA in R, I know that I can actually
 see the strength of correlation for each individual variable
 
 ```{r}
-
-pca <- prcomp(df_scaled) #NOTE: Should try making the rank. argument smaller, maybe 5?
-
-View(pca$rotation)
-
-pca <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM) %>% prcomp
-summary(pca)
-
-View(pca$rotation)
-
-pca <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ) %>% prcomp
-summary(pca)
-View(pca$rotation)
-
-#Combine the correlation strength from the first two principal components, let's see if we can remove more
-cor <- abs(as.data.frame(pca$rotation)$PC1) + abs(as.data.frame(pca$rotation)$PC2)
-names(cor) <- rownames(as.data.frame(pca$rotation))
-sort(cor)
-
-remove(cor)
-
-#Try with just the top 10 variables
-pca <- df_scaled %>% select(NOUN, PRON, Rel, Sub, Dem, Past) %>% prcomp
-summary(pca)
-View(pca$rotation)
-
-pca <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ, -ADV, -Acc, -Loc, -Dat, -Nom) %>% prcomp
-summary(pca)
-View(pca$rotation)
-
-pca <- df_scaled %>% select(c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs")) %>% prcomp(rank. = 2)
-summary(pca)
-View(pca$rotation)
-
-#Try with the same variables as above
-#df_test <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ, -ADV, -Acc, -Loc, -Dat, -Nom) 
-
-#Try this with a new subset of variables
-df_test <- df_scaled %>% select(c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs"))
-
-fviz_cluster(kmeans(df_test, centers = k, nstart = 50), data=df_test, stand = FALSE, palette = c("red", "green", "blue", "purple", "yellow", "magenta", "gray", "cyan"), 
-             geom = geom,
-             ellipse.type = ellipse.type, 
-             ggtheme = ggtheme,
-             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=2) 
-
-km.test <- kmeans(df_test, centers = 8, nstart = 50)
-df.test <- data.frame(clusters = km.test$cluster, df_test)
-df.test$title <- final.frame$title
-
-
-remove(km.test)
-remove(df.test)
-
-
-ggsave(filename = "Images/pca_test_cluster.png", dpi="print")
+# 
+# pca <- prcomp(df_scaled) #NOTE: Should try making the rank. argument smaller, maybe 5?
+# 
+# View(pca$rotation)
+# 
+# pca <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM) %>% prcomp
+# summary(pca)
+# 
+# View(pca$rotation)
+# 
+# pca <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ) %>% prcomp
+# summary(pca)
+# View(pca$rotation)
+# 
+# #Combine the correlation strength from the first two principal components, let's see if we can remove more
+# cor <- abs(as.data.frame(pca$rotation)$PC1) + abs(as.data.frame(pca$rotation)$PC2)
+# names(cor) <- rownames(as.data.frame(pca$rotation))
+# sort(cor)
+# 
+# remove(cor)
+# 
+# #Try with just the top 10 variables
+# pca <- df_scaled %>% select(NOUN, PRON, Rel, Sub, Dem, Past) %>% prcomp
+# summary(pca)
+# View(pca$rotation)
+# 
+# pca <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ, -ADV, -Acc, -Loc, -Dat, -Nom) %>% prcomp
+# summary(pca)
+# View(pca$rotation)
+# 
+# pca <- df_scaled %>% select(c(`2`, "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs")) %>% prcomp(rank. = 2)
+# summary(pca)
+# View(pca$rotation)
+# 
+# #Try with the same variables as above
+# #df_test <- df_scaled %>% select(-Rcp, -Tot, -Cmp, -Con, -Art, -Voc, -Prosp, -PROPN, -NUM, -Masc, -Fem, -Neut, -CCONJ, -ADV, -Acc, -Loc, -Dat, -Nom) 
+# 
+# #Try this with a new subset of variables
+# df_test <- df_scaled %>% select(c(`2`, "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs"))
+# 
+# fviz_cluster(kmeans(df_test, centers = k, nstart = 50), data=df_test, stand = FALSE, palette = c("red", "green", "blue", "purple", "yellow", "magenta", "gray", "cyan"), 
+#              geom = geom,
+#              ellipse.type = ellipse.type, 
+#              ggtheme = ggtheme,
+#              ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=2) 
+# 
+# km.test <- kmeans(df_test, centers = 8, nstart = 50)
+# df.test <- data.frame(clusters = km.test$cluster, df_test)
+# df.test$title <- final.frame$title
+# 
+# 
+# remove(km.test)
+# remove(df.test)
+# 
+# 
+# ggsave(filename = "Images/pca_test_cluster.png", dpi="print")
 ```
 
 Given the previous section, let's only remove the following items:
@@ -1150,6 +1159,12 @@ better than just POS or just Verbs or categories like that.
 ```{r}
 ## POS, Verbs, Case
 
+#Recut from final.frame to get all variables back
+df_clust <- final.frame[,2:length(final.frame)]
+#df_clust <- slice_sample(df_clust, n=45)
+
+df_scaled <- as.data.frame(scale(df_clust))
+
 
 df_pos <- df_clust[,4:15]
 #df_pos <- df_pos[sample(nrow(df_pos), 80),]
@@ -1206,7 +1221,7 @@ hcut_results <- hcut(df_verb)
 
 fviz_nbclust(df_verb, hcut, method="wss")
 
-fviz_dend(hcut_results, palette = palette, 
+fviz_dend(hcut_results, palette = palette,
           geom = "point",
           ellipse.type = "convex",
           type = "rectangle",
@@ -1293,7 +1308,7 @@ For example, what if we only look at participles? Here are the lowest 25
 texts by participle count:
 
 ```{r}
-final.frame %>% slice_min(Part, n=25) %>% select(title) %>% print(n = 25)
+final.frame %>% slice_min(Part, n=25) %>% tidytable::select(title) %>% print(n = 25)
 ```
 
 Notice how it's just comedy and the letters to Atticus!!!
@@ -1303,10 +1318,72 @@ But what about other letters? Let's look at Pliny's letters
 ```{r}
 final.frame %>% 
   slice_min(Part, n=229) %>% 
-  select(title) %>% 
+  tidytable::select(title) %>% 
   print(n = 229)
   
 ```
+
+## QA of Postags
+
+I took a selection of about 250 random words from the corpus. For each
+field, I put a '1' if the tag was correct for that word and a '0' if the
+tag was incorrect. If the TAG was incorrect, messing with the rest of
+the results, I put a 0 for the rest. This means the results will
+actually be harsher than they ought to be, as there will probably be
+more incorrect "NumType" arguments, for example, than there are even
+instances of the "NumType" field being used.
+
+Anecdotally, the biggest challenges were confusing dative and ablative
+(usually counting as ablative when it should be dative), or the
+algorithm struggled to get the correct lemma, often making one up when
+it did make a mistake. Usually, getting the wrong lemma didn't actually
+cause the parsing to be incorrect. It only did so when the algorithm
+thought a word was a part of speech that it simply wasn't, saying a noun
+was a verb for example. So, it might say "terra" is from some lemma
+"terrum", but it still says it's Nominative, Singular, feminine. Words
+with two forms were sometimes a problem; *cum* got mistagged once.
+*Modo* was mistagged as *modus* instead of the adverb.
+
+Unfortunately, I had to do some reprocessing. Even though the index of
+the row in the original data is saved(in the data frame in the code
+snippet below, it is the \$index column), it might not correspond
+anymore. For many of them it still should, but possibly not all,
+especially in Livy.
+
+Note: If I were to do the QA again, I would make sure to better consider
+these situations:
+
+-   Select even numbers of each part of speech (n / number of parts of
+    speech = sample to select from each)
+
+-   Mark use of *sum* as AUX as correct. I've been saying it's
+    incorrect, based on the way LDT works, not UD
+
+-   If the TAG is completely wrong, then there needs to be a third NA
+    option for the rest of the tags. The mistagging will invalidate
+    whether the other fields are useful.
+
+    -   What about circumstances like *liberi,* where it means
+        "children." It might get the lemma and the tag wrong, but I
+        still would consider it a success if it gets the result *masc.,
+        nom., plur.*
+
+-   Tag for when a tag is correctly left off, like having an empty TENSE
+    tag on a noun
+
+-   Save the value of the TAG. That way, I can see how many NOUNS had
+    correct number. Currently, looking at the correct tags for number
+    looks at nouns, verbs, adjectives, pronouns.
+
+-   Make sure I'm consistent about tagging Tense correctly when it's
+    empty for infinitives. A present infinitive always gets Imperfective
+    aspect, and a perfect infinitive gets Perfective.
+
+    Another potential issue is where it tags correctly, but the
+    limitation is really in the tagging system itself. For example, *ius
+    iurandum* is really a single noun. To treat *iurandum* as an example
+    of a gerund really ignores the fact that the phrase works together.
+    However, it's not incorrect to tag it that way morphologically.
 
 # Misc Tests
 
