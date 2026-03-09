@@ -1,7 +1,6 @@
 ---
 title: "R Notebook"
 output: html_notebook
-runtime: shiny
 editor_options: 
   markdown: 
     wrap: 72
@@ -10,7 +9,7 @@ editor_options:
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you
 execute code within the notebook, the results appear beneath the code.
 
-```{r include=FALSE}
+```{r include=TRUE}
 knitr::opts_chunk$set(results="hold")
 ```
 
@@ -220,11 +219,19 @@ df_scaled <- as.data.frame(scale(df_clust))
 
 # Analysis
 
-First, to get some of the formatting predefined:
+First, to get some of the formatting predefined.
+
+Another note is that here is where I remove the variables I'm not
+considering.
 
 ```{r}
 #10 variables to use for analysis. This is based of the work done in the Testing section below
-vars <- c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs")
+#vars <- c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs")
+
+#These vars I selected based on the Better variable selection heading down below. 
+#These are the variables that belonged to the 30 with the highest frequency AND the highest variance
+vars <- c("Pres", "NOUN", "Imp", "2", "Act", "Past", "Perf", "3", "PRON", "Fin", "Nom", "Abl", "Prs", "Acc", "ADJ", "Gen", "ADP", "Part", "Pass", "DET", "Rel")
+
 df_clust <- df_clust %>% dplyr::select(all_of(vars))
 rownames(df_clust) <- rownames(final.frame)
 df_scaled <- df_scaled %>% dplyr::select(all_of(vars))
@@ -431,22 +438,22 @@ results aren't identical every time, but Hartigan-Wong, the default
 algorithm, either had the lowest or tied for the lowest total wihin sum
 of squares.
 
-+-------------------+-----------------+
-| a l g orithm      | t o t . w i     |
-|                   | thinss          |
-| \                 |                 |
-| \<chr\>           | \               |
-|                   | \<dbl\>         |
-+:==================+================:+
-| H a r t i g a     | 3 9 88.635      |
-| n-Wong            |                 |
-+-------------------+-----------------+
-| Lloyd             | 3 9 89.989      |
-+-------------------+-----------------+
-| Forgy             | 3 9 93.158      |
-+-------------------+-----------------+
-| M a cQueen        | 3 9 89.989      |
-+-------------------+-----------------+
++----------------+----------------+
+| a l g orithm   | t o t . w i    |
+|                | thinss         |
+| \              |                |
+| \<chr\>        | \              |
+|                | \<dbl\>        |
++:===============+===============:+
+| H a r t i g a  | 3 9 88.635     |
+| n-Wong         |                |
++----------------+----------------+
+| Lloyd          | 3 9 89.989     |
++----------------+----------------+
+| Forgy          | 3 9 93.158     |
++----------------+----------------+
+| M a cQueen     | 3 9 89.989     |
++----------------+----------------+
 
 ```{r}
 
@@ -700,7 +707,23 @@ remove(cluster4)
 
 ## CLARA
 
-Clara is another clustering algorithm like K-means, but which
+Clara is another clustering algorithm like K-means, but which uses
+medoids instead of means. The medoid is an actual data point at the
+center instead of a mean center.
+
+```{r echo=TRUE}
+set.seed(126126)
+
+clara.res <- clara(df_scaled, k=k, metric = hc_metric, samples=50, pamLike = TRUE)
+
+fviz_cluster(clara.res, data=df_scaled, stand = FALSE, palette = c("red", "green", "blue", "purple", "yellow", "magenta", "gray", "cyan"), 
+             geom = geom,
+             ellipse.type = ellipse.type,
+             ggtheme = ggtheme,
+             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=1)
+
+ggsave(filename="Images/clara-results.png", dpi="print")
+```
 
 ## AGNES
 
@@ -1150,155 +1173,123 @@ ggsave(filename = "Images/dendrogram_10vars.png", dpi="print")
 
 ```
 
-## POS, VERBS, etc.
-
-Note that these analyses are old, older than when I did my tests with
-PCA. It seems that the variables I've settled on explain the variance
-better than just POS or just Verbs or categories like that.
+### Significance testing
 
 ```{r}
-## POS, Verbs, Case
 
-#Recut from final.frame to get all variables back
-df_clust <- final.frame[,2:length(final.frame)]
-#df_clust <- slice_sample(df_clust, n=45)
+clusters.aov <- kmeans_basic_df
 
-df_scaled <- as.data.frame(scale(df_clust))
+#F-test
+cluster.aov |>
+  map(
+    \(x) var.test(
+      x = x[cluster.aov$Clusters == 1],
+      y = x[cluster.aov$Clusters == 4],
+      alternative = "two.sided")
+  )
+#Only Participles, Passive verbs, and Future tense verbs are significantly different, with a lot more variance in participles in cluster 4
 
 
-df_pos <- df_clust[,4:15]
-#df_pos <- df_pos[sample(nrow(df_pos), 80),]
+#Did this without apply() for some reason, this looks at anovas
+# cluster.aov <- kmeans_basic_df[kmeans_basic_df$Clusters %in% c(2,4),] #only look at clusters 1 and 4
+# cluster.aov$Clusters <- as.character(cluster.aov$Clusters)
+# 
+# aov.res <- aov(X2 ~ Clusters, data = cluster.aov)
+# 
+# summary(aov.res)
+# 
+# 
+# aov.res <- aov(PART ~ Clusters, data = cluster.aov)
+# 
+# aov.res <- aov(Imp ~ Clusters, data = cluster.aov)
+# summary(aov.res)
+# 
+# aov.res <- aov(Pres ~ Clusters, data = cluster.aov)
+# 
+# aov.res <- aov(Part ~ Clusters, data = cluster.aov)
+# 
+# aov.res <- aov(Abl ~ Clusters, data = cluster.aov)
+# 
+# aov.res <- aov(Pass ~ Clusters, data = cluster.aov)
+# 
+# aov.res <- aov(Fut ~ Clusters, data = cluster.aov)
+# 
+# aov.res <- aov(X1 ~ Clusters, data = cluster.aov)
+# 
+# aov.res <- aov(Prs ~ Clusters, data = cluster.aov)
 
-hcut_results <- hcut(df_pos)
+#T-test
+#Use map, because I was an idiot not to do that up above
+cluster.aov <- kmeans_basic_df
+kmeans_basic_df |>
+  dplyr::select(-Clusters) |>
+  map(
+    \(x) t.test(
+      x = x[cluster.aov$Clusters == 1],
+      y = x[cluster.aov$Clusters == 4],
+      alternative = "two.sided")
+  )
+#Means are significantly different in all cases. What about effect size? Can't do that with differently sized samples. 
 
-fviz_nbclust(df_pos, hcut, method="wss")
 
-fviz_dend(hcut_results,  k = 2, palette = palette, 
-          geom = "point",
-          ellipse.type = "convex",
-          type = "rectangle",
-          rect = TRUE,
-          #horiz=TRUE,
-          ggtheme = theme_bw(),
-) + geom_point() + coord_cartesian(ylim = c(-1000, 2100)) + dend_theme
-
-ggsave(filename = "./Images/tree_pos.png", dpi="print")
-
-scaled_pos <- scale(df_pos)
-kmeans_basic_cluster <- kmeans(scaled_pos, centers=5, nstart=20)
-kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
-kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_pos)
-
-#TODO ADD SUMMARIES OF THE ABOVE DATA HERE
-
-pca <- prcomp(scaled_pos)
-
-summary(pca)
-
-#Visualizations
-
-choose <- NULL
-
-fviz_nbclust(df_clust, kmeans, method="wss", nstart=50)
-
-fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_pos, palette = palette, 
-             geom = geom,
-             ellipse.type = ellipse.type, 
-             ggtheme = theme_bw(),
-             ) + geom_text_repel(aes(label = rownames(df_pos)))
-
-ggsave(filename = "./Images/cluster_pos.png", dpi='print')
 ```
 
-Note in the following how the Letters to Atticus are quite far away from
-Comedy and Petronius! Unlike the previous, when looking at POS tags.
+### Better variable selection
 
-```{r Hierarchical Clustering Just Verb info}
+At the beginning of this section, I used PCA to get my best guess at a
+selection of variables. However, I want a better method, and I've been
+reading Moisl 2015 in order to get a better method. On p. 69, he says
+*frequency, variability* and *nonrandomness* are the best criteria for
+variables.
 
-df_verb <- df_clust %>% select(`1`, `2`, `3`, Ind, Sub, Imp, Fut, `Inf`, Fin, Pqp, Past, Act, Pass, Part, Prosp, Pres, Perf)
+First, lets look at frequency.
 
-hcut_results <- hcut(df_verb)
+```{r Frequency}
+final.frame |>
+  dplyr::select(-title) |>
+  map(sum) |>
+  unlist() |>
+  sort(decreasing=TRUE)
 
-fviz_nbclust(df_verb, hcut, method="wss")
-
-fviz_dend(hcut_results, palette = palette,
-          geom = "point",
-          ellipse.type = "convex",
-          type = "rectangle",
-          #horiz=TRUE,
-          ggtheme = theme_bw(),
-) + geom_point()# + coord_cartesian(ylim = c(-1000, 2100)) + theme(margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
+#############
+#top 30
+# NOUN         Masc          Nom          Imp          Fin          Acc          Act          Fem            3 
+# 4.435668e+05 4.147746e+05 3.100554e+05 2.736535e+05 2.730731e+05 2.730541e+05 2.627717e+05 2.541429e+05 2.259616e+05 
+#         Neut          Abl         Pres         Perf          ADJ         PRON          DET         Pass         Part 
+# 2.008808e+05 1.945355e+05 1.621975e+05 1.401730e+05 1.358719e+05 1.119248e+05 1.106535e+05 1.093912e+05 1.014122e+05 
+#          ADP         Past          Gen          ADV          Prs        CCONJ          Rel        SCONJ            2 
+# 9.528447e+04 9.236044e+04 9.118092e+04 8.923980e+04 8.155264e+04 7.987062e+04 7.248893e+04 7.220167e+04 6.811335e+04
 ```
 
-```{r VERBS, NOT POS}
-scaled_verb <- scale(df_verb)
-kmeans_basic_cluster <- kmeans(scaled_verb, centers=5, nstart=20)
-kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
-kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_verb)
-
-#TODO ADD SUMMARIES OF THE ABOVE DATA HERE
-
-pca <- prcomp(scaled_verb)
-
-summary(pca)
-
-#Visualizations
-
-choose <- NULL
-
-fviz_nbclust(scaled_verb, kmeans, method="wss", nstart=50)
-
-fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_verb, palette = palette, 
-             geom = "point",
-             ellipse.type = "convex", 
-             ggtheme = theme_bw(),
-             ) + geom_text_repel(aes(label=rownames(df_clust)))
-```
-
-When looking at Case, it seems that Comedy, Seneca, Petronius, and the
-Letters to Atticus cluster together again. It is a strong enough cluster
-that they nearly form their own category.
-
-```{r Hierarchical clustering Case}
-
-df_case <- df_clust[,16:22]
-
-hcut_results <- hcut(df_case)
-
-fviz_nbclust(df_case, hcut, method="wss")
-
-fviz_dend(hcut_results, palette = palette, 
-          geom = "point",
-          ellipse.type = "convex",
-          type = "rectangle",
-          #horiz=TRUE,
-          ggtheme = theme_bw(),
-) + geom_point()# + coord_cartesian(ylim = c(-1000, 2100)) + theme(margins = margin(t = margin_size, r = margin_size, b = margin_size, l = margin_size))
-```
+Then the variance, since every variable is just measured by frequency,
+i.e. on the same scale:
 
 ```{r}
-scaled_case <- scale(df_case)
-kmeans_basic_cluster <- kmeans(scaled_case, centers=6, nstart=20)
-kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
-kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_case)
+final.frame |>
+  dplyr::select(-title) |>
+  map(var) |>
+  unlist() |>
+  sort(decreasing=TRUE)
 
-#TODO ADD SUMMARIES OF THE ABOVE DATA HERE
+########################
+#Top 30
+# Pres         NOUN         Masc          Imp            2          Act          Fin          Nom          Abl 
+# 2.831353e+05 2.716960e+05 2.637017e+05 2.084504e+05 1.756891e+05 1.259599e+05 1.175200e+05 1.033145e+05 1.003215e+05 
+#         Past          Fem         Perf            3         PRON         Neut          Prs          Acc            1 
+# 9.743705e+04 9.480298e+04 9.071634e+04 8.927443e+04 6.354106e+04 5.912976e+04 5.849000e+04 5.831359e+04 5.334554e+04 
+#          ADJ          Gen          ADP         Part         Pass        CCONJ          DET          Rel          Sub 
+# 4.641446e+04 3.933973e+04 3.639815e+04 2.903627e+04 2.749880e+04 2.301436e+04 2.004029e+04 1.736851e+04 1.405187e+04 
+```
 
-pca <- prcomp(scaled_case)
+Now, for the non-randomness parameter:
 
-summary(pca)
+```{r}
 
-#Visualizations
-
-choose <- NULL
-
-fviz_nbclust(scaled_case, kmeans, method="wss", nstart=50)
-
-fviz_cluster(kmeans_basic_cluster, choose.vars = choose, data = df_case, palette = c(palette, "brown"), 
-             geom = "point",
-             ellipse.type = "convex", 
-             ggtheme = theme_bw(),
-             ) + geom_text(aes(label=rownames(df_clust)))
+final.frame |>
+  dplyr::select(-title) |>
+  map(\(x) var(x) / mean(x)) |>
+  unlist() |>
+  sort(decreasing=TRUE)
 ```
 
 ## Notes on Specific Tags
@@ -1344,6 +1335,9 @@ was a verb for example. So, it might say "terra" is from some lemma
 with two forms were sometimes a problem; *cum* got mistagged once.
 *Modo* was mistagged as *modus* instead of the adverb.
 
+Another major challenge is the fact Stanza doesn't recognize enclitics
+like -que and -ve as the old CLTK did.
+
 Unfortunately, I had to do some reprocessing. Even though the index of
 the row in the original data is saved(in the data frame in the code
 snippet below, it is the \$index column), it might not correspond
@@ -1384,6 +1378,17 @@ these situations:
     iurandum* is really a single noun. To treat *iurandum* as an example
     of a gerund really ignores the fact that the phrase works together.
     However, it's not incorrect to tag it that way morphologically.
+
+```{r}
+setwd("~/GitHub/cltk-2025-atticus")
+qa <- read.csv("postag-tests.csv", header = TRUE)
+
+for (i in 4:length(qa[1,])) {
+  qa[,i] <- as.logical(qa[,i])
+}
+
+summary(qa)
+```
 
 # Misc Tests
 
