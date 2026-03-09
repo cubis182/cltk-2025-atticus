@@ -1,8 +1,10 @@
 ---
 title: "R Notebook"
-output: html_notebook
-editor_options: 
-  markdown: 
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -23,6 +25,7 @@ knitr::opts_chunk$set(results="hold")
 # install.packages("tidyverse")
 # install.packages("dendextend")
 # install.packages("MASS")
+# install.packages("ggtext")
 
 library(factoextra)
 library(dplyr)
@@ -34,6 +37,7 @@ library(combinat)
 library(dendextend)
 library(MASS)
 library(multcomp)
+library(ggtext)
 ```
 
 (For the above ggrepel library, see
@@ -230,7 +234,8 @@ considering.
 
 #These vars I selected based on the Better variable selection heading down below. 
 #These are the variables that belonged to the 30 with the highest frequency AND the highest variance
-vars <- c("Pres", "NOUN", "Imp", "2", "Act", "Past", "Perf", "3", "PRON", "Fin", "Nom", "Abl", "Prs", "Acc", "ADJ", "Gen", "ADP", "Part", "Pass", "DET", "Rel")
+#I also removed Act because it isn't independent from passive verbs, and I removed gender because there's no reason to believe it's related to register.
+vars <- c("Pres", "NOUN", "Imp", "2", "Past", "Perf", "3", "PRON", "Fin", "Nom", "Abl", "Prs", "Acc", "ADJ", "Gen", "ADP", "Part", "Pass", "DET", "Rel")
 
 df_clust <- df_clust %>% dplyr::select(all_of(vars))
 rownames(df_clust) <- rownames(final.frame)
@@ -282,7 +287,7 @@ modifications we can make:
 
 ```{r K-means clustering}
 set.seed(126126)
-kmeans_basic_cluster <- kmeans(df_scaled, centers=k, nstart=25)
+kmeans_basic_cluster <- kmeans(df_clust, centers=k, nstart=25)
 kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, kmeans_basic_cluster$centers)
 kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_clust)
 
@@ -297,7 +302,7 @@ amount, looking at the fviz_nbclust results with the wss method.
 
 #Principal component analysis
 
-pca <- prcomp(df_scaled)
+pca <- prcomp(df_clust)
 
 summary(pca)
 
@@ -314,10 +319,39 @@ cluster_main <- fviz_cluster(kmeans_basic_cluster,
              geom = geom,
              ellipse.type = ellipse.type, 
              ggtheme = ggtheme
-             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 14, size=2, seed = 12927) + labs(x = paste("Dim1", dim1, "(Left = More 1st/2nd person, personal pronouns, Right = More Ablative nouns, Passive Verbs, participles)"), y = paste("Dim2", dim2, "(Up = more particles, Down = fewer particles)"), title = "K-means clustering applied to PHI Latin Texts, k=4") + theme(axis.title = element_text(size = 8))
+             ) + 
+  geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 14, size=2, seed = 12927) + 
+  labs(
+    x = paste(strwrap(paste("Dim1", dim1, "(Left = more 1st/2nd person, imperfective verbs, Right = more Ablative nouns, perfective verbs, and nouns overall)"), 70), collapse = '\n'), 
+    y = paste(strwrap(paste("Dim2", dim2, "(Up = more 3rd person and past tense verbs, Down = more nouns)"), 50), collapse='\n'), 
+    title = "(1) K-means clustering applied to PHI Latin Texts, k=4") + 
+  theme(axis.title = element_text(size = 12)) + annotate("text", x = -7, y = -0.5, label = "Comedy", fontface = "bold") + 
+  annotate("text", x = -2.5, y = 4, label = "Prose", fontface = "bold") +
+  annotate("text", x = -4, y = -5, label = "Poetry", fontface = "bold") +
+  annotate("text", x = 4, y = -4, label = "History", fontface = "bold")
 cluster_main
 
-ggsave(filename = "Images/cluster-diagram-kmeans-all-cicero.png", dpi="print")
+ggsave(filename = "Images/cluster-diagram-kmeans.png", dpi="print")
+
+cluster_main <- fviz_cluster(kmeans_basic_cluster, 
+             data = df_clust, 
+             palette = palette, 
+             geom = geom,
+             ellipse.type = ellipse.type, 
+             ggtheme = ggtheme
+             ) + 
+  geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 14, size=2, seed = 12927) + 
+  labs(
+    x = paste(strwrap(paste("Dim1", dim1, "(Left = more 1st/2nd person, imperfective verbs, Right = more Ablative nouns, perfective verbs, and nouns overall)"), 70), collapse = '\n'), 
+    y = paste(strwrap(paste("Dim2", dim2, "(Up = more 3rd person and past tense verbs, Down = more nouns)"), 35), collapse='\n'), 
+    title = "(1) K-means clustering applied to PHI Latin Texts, k=4") + 
+  theme(axis.title = element_text(size = 15)) + annotate("text", x = -7, y = -0.5, label = "Comedy", fontface = "bold") + 
+  annotate("text", x = -2.5, y = 4, label = "Prose", fontface = "bold") +
+  annotate("text", x = -4, y = -5, label = "Poetry", fontface = "bold") +
+  annotate("text", x = 4, y = -4, label = "History", fontface = "bold")
+cluster_main
+
+ggsave(filename = "Images/cluster-diagram-kmeans-LARGEPRINT.png", dpi="print")
 
 str(kmeans_basic_cluster)
 
@@ -362,7 +396,7 @@ Texts on the the right-hand side of the cluster graph feature more
 ablative nouns, participles, and passive verbs.
 
 ```{r}
-pca <- prcomp(df_scaled)
+pca <- prcomp(df_clust)
 
 rotations.df <- as.data.frame(pca$rotation)
 
@@ -370,67 +404,88 @@ rotations <- data.frame(var = rownames(rotations.df), rotations = rotations.df$P
 
 rotation.two <- data.frame(var = rownames(rotations.df), rotations = rotations.df$PC2)
 
-ggplot(rotations, aes(var, rotations)) + labs(x = "Variables", y = "Correlation Strength", title = "Correlation of X-axis in cluster diagram with selected variables") + geom_col()
+ggplot(rotations, aes(var, rotations)) + labs(x = "Variables", y = "Correlation Strength", title = "(2) Variation across X-axis in cluster diagram") + geom_col() + theme(
+    axis.text.x = element_text(size = 15, angle = 90, vjust = 0.5, hjust = 1),
+    axis.title = element_text(size = 14),
+    title = element_text(size = 14)
+  ) 
 ggsave(filename = "Images/PC1_rotations.png", dpi="print")
 
-ggplot(rotation.two, aes(var, rotations)) + labs(x = "Variables", y = "Correlation Strength", title = "Correlation of Y-axis in cluster diagram with selected variables") + geom_col()
+ggplot(rotations, aes(var, rotations)) + labs(x = "Variables", y = "Correlation Strength", title = "(2) Variation across X-axis in cluster diagram") + geom_col() + theme(
+    axis.text.x = element_text(size = 15, angle = 90, vjust = 0.5, hjust = 1),
+    axis.title = element_text(size = 14),
+    title = element_text(size = 14)
+  ) 
+ggsave(filename = "Images/PC1_rotations.png", dpi="print")
+
+ggplot(rotation.two, aes(var, rotations)) + labs(x = "Variables", y = "Correlation Strength", title = "Correlation of Y-axis in cluster diagram with selected variables") + geom_col() + theme(
+    axis.text.x = element_text(size = 15, angle = 90, vjust = 0.5, hjust = 1)
+  ) + theme(
+    axis.text.x = element_text(size = 15, angle = 90, vjust = 0.5, hjust = 1)
+  ) 
 ggsave(filename = "Images/PC2_rotations.png", dpi="print")
 
 #NOTE: I should try this with Act as a variable too. Pass alone might be high because there are a lot of participles and ablative nouns.
 ```
 
-So, we know the correlation here, but I want to know whether these
-correlation values are significant. We want to see
-
-I want to try this graph with the best combo of factors for PCA alone. I
-found that c("2", "PART", "Imp", "Pres", "Part", "Abl") could explain a
-full 90% of the textual variation with the first two principal
-components.
+How different are the values of Atticus compared to the means of its own
+cluster?
 
 ```{r}
 
-df_sub <- df_scaled %>% dplyr::select(`2`, PART, Imp, Pres, Part, Abl)
-df_sub_unscaled <- df_clust %>% dplyr::select(`2`, PART, Imp, Pres, Part, Abl)
+#Lets get a vector of each of the Att values minus the mean of its cluster.
 
-kmeans.res <- kmeans(df_sub, centers = k, nstart = 50)
+cluster_four <- kmeans_basic_df |> filter(Clusters == 1)
 
-fviz_nbclust(df_sub, kmeans, method="wss", nstart = 50)
+dist <- cluster_four |>
+  dplyr::select(-title) |>
+  map(
+    \(x) x[1] - mean(x[-1])
+  )
 
-cluster_main <- fviz_cluster(kmeans.res, 
-             data = df_sub, 
-             palette = palette, 
-             geom = geom,
-             ellipse.type = ellipse.type, 
-             ggtheme = ggtheme,
-             ) + geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=2)
-cluster_main
+dist_df <- data.frame(var = names(dist)[-1], distance = unlist(dist)[-1])
 
-ggsave(filename = "Images/six_factors.png", dpi="print")
+ggplot(dist_df, aes(var, distance)) + geom_col() + 
+  scale_fill_continuous(breaks = c(0, 50, 100, 150, 200, 250)) +
+  labs(title = "(3) Difference Between Letters to Atticus and Its Cluster") +
+  xlab("Variable (X1 and X2 = 1st person and 2nd person)") +
+  ylab("Letters to Atticus minus cluster mean") +
+  theme(
+    axis.text.x = element_text(size = 15, angle = 90, vjust = 0.5, hjust = 1),
+    axis.title = element_text(size = 14),
+    title = element_text(size = 14)
+  ) 
 
+ggsave(filename = "Images/att-vs-same-cluster-means.png", dpi="print")
 ```
 
-Let's take a look at a data frame with the clusters added.
+What about the differences between Comedy and the Letters to Atticus?
 
 ```{r}
-km.dataframe <- data.frame(clusters = kmeans.res$cluster, df_sub)
-km.dataframe$title <- final.frame$title
 
-km.unscaled <- data.frame(clusters = kmeans.res$cluster, df_sub_unscaled)
-km.unscaled$title <- final.frame$title
+kmeans_basic_df$title <- as.vector(final.frame$title)
+cluster_four <- kmeans_basic_df |> filter(Clusters == 4 | title == "1 Letters to Att") |> dplyr::select(-title)
 
-get_means <- function(INDEX) {
-  temp <- dplyr::select(km.unscaled, -title)
-  apply(X=temp[temp$clusters == INDEX,], MARGIN = 2, FUN=mean)
-}
+dist <- cluster_four |>
+  map(
+    \(x) x[1] - mean(x[-1])
+  )
 
-cluster_means <- map(unique(km.unscaled$clusters), get_means)
-cluster_means
+dist_df <- data.frame(var = names(dist)[-1], distance = unlist(dist)[-1])
 
-remove(df_sub)
-remove(kmeans.res)
+ggplot(dist_df, aes(var, distance)) + geom_col() + 
+  scale_fill_continuous(breaks = c(0, 50, 100, 150, 200, 250)) +
+  labs(title = "(4) Difference Between Letters to Atticus and Comedy") +
+  xlab("Variable (X1 and X2 = 1st person and 2nd person)") +
+  ylab("Letters to Atticus minus cluster mean") +
+  theme(
+    axis.text.x = element_text(size = 15, angle = 90, vjust = 0.5, hjust = 1),
+    axis.title = element_text(size = 14),
+    title = element_text(size = 14)
+  ) 
+
+ggsave(filename = "Images/atticus-vs-comedy-means.png", dpi="print")
 ```
-
-So, we have the cluster means for our parameters now
 
 I commented this out because I'm done with it, but I saved the results
 in a data table. Because K-means has an element of randomness, the
@@ -438,22 +493,22 @@ results aren't identical every time, but Hartigan-Wong, the default
 algorithm, either had the lowest or tied for the lowest total wihin sum
 of squares.
 
-+----------------+----------------+
-| a l g orithm   | t o t . w i    |
-|                | thinss         |
-| \              |                |
-| \<chr\>        | \              |
-|                | \<dbl\>        |
-+:===============+===============:+
-| H a r t i g a  | 3 9 88.635     |
-| n-Wong         |                |
-+----------------+----------------+
-| Lloyd          | 3 9 89.989     |
-+----------------+----------------+
-| Forgy          | 3 9 93.158     |
-+----------------+----------------+
-| M a cQueen     | 3 9 89.989     |
-+----------------+----------------+
++---------------+---------------+
+| a l g orithm  | t o t . w i   |
+|               | thinss        |
+| \             |               |
+| \<chr\>       | \             |
+|               | \<dbl\>       |
++:==============+==============:+
+| H a r t i g a | 3 9 88.635    |
+| n-Wong        |               |
++---------------+---------------+
+| Lloyd         | 3 9 89.989    |
++---------------+---------------+
+| Forgy         | 3 9 93.158    |
++---------------+---------------+
+| M a cQueen    | 3 9 89.989    |
++---------------+---------------+
 
 ```{r}
 
@@ -559,148 +614,11 @@ norm_tails <- function(att, colloquial.non.att, plotname) {
 norm_tails(att, colloquial.non.att, "2nd person verbs")
 
 
-##############################
-#Particles
-print("Particles:")
 
-#Let's not used the scaled values, because we're comparing means, and the mean would be 0. 
-att <- cluster4$PART[1] #Atticus is always first
-colloquial.non.att <- cluster4$PART[2:length(cluster4$PART)]
-
-shapiro.test(colloquial.non.att)
-
-norm_tails(att, colloquial.non.att, "Particles")
-
-#The letters have a higher number of particles than the mean, with a p-value < 0.005
-
-##############################
-#Imperfect (Imp)
-print("Imperfect")
-
-#Let's not used the scaled values, because we're comparing means, and the mean would be 0. 
-att <- cluster4$Imp[1] #Atticus is always first
-colloquial.non.att <- cluster4$Imp[2:length(cluster4$Imp)]
-
-shapiro.test(colloquial.non.att) #on the edge with p = 0.026
-
-#The distribution of imperatives is not likely to be normally distributed, or the sample is not sufficient. See this ecdf plot:
-plot(ecdf(colloquial.non.att), main = "ECDF plot of Imperatives in cluster 4")
-
-norm_tails(att, colloquial.non.att, "Imperfect") #p = 0.00019, upper tail
-boxplot(colloquial.non.att, att, main = "Imperfect verbs")
-
-#The letters to Atticus have fewer imperfective forms than the other colloquial texts (i.e. Comedy)
-
-#Visually, the number of imperatives is much lower in Att than the other texts
-
-##############################
-#Present tense (Pres)
-print("Present tense:")
-
-#Let's not used the scaled values, because we're comparing means, and the mean would be 0. 
-att <- cluster4$Pres[1] #Atticus is always first
-colloquial.non.att <- cluster4$Pres[2:length(cluster4$Pres)]
-
-shapiro.test(colloquial.non.att)
-
-hist(colloquial.non.att, main = "Present tense verbs")
-
-#norm_tails(att, colloquial.non.att)
-
-boxplot(colloquial.non.att, att, main = "Present tense verbs")
-
-#Note in the boxplot how the number of present tense verbs is so much higher. 
-
-##############################
-#Participles (Part)
-print("Participles:")
-
-#Let's not used the scaled values, because we're comparing means, and the mean would be 0. 
-att <- cluster4$Part[1] #Atticus is always first
-colloquial.non.att <- cluster4$Part[2:length(cluster4$Part)]
-
-shapiro.test(colloquial.non.att)
-#The number of participles is high, in the upper quartile, but still within range. 85.19% of values are lower than the Letters to Atticus
-
-boxplot(colloquial.non.att, att, main = "Participles")
-
-{hist(colloquial.non.att, main = "Participles")
-  abline(v=att, col="red")}
-
-
-#norm_tails(att, colloquial.non.att)
-
-##############################
-#Ablative nouns (Abl)
-print("Ablative nouns:")
-
-att <- cluster4$Abl[1] #Atticus is always first
-colloquial.non.att <- cluster4$Abl[2:length(cluster4$Abl)]
-
-shapiro.test(colloquial.non.att)
-
-{hist(colloquial.non.att, main = "Ablative nouns")
-  abline(v = att, col = "red")}
-
-#Note in the histogram above that the only texts with more than 900 ablative nouns are the Eclogues, Sulpicia, and the Letters to Atticus
-
-#norm_tails(att, colloquial.non.att)
-
-##############################
-#Passive verbs (Pass)
-print("Passive verbs:")
-att <- cluster4$Pass[1] #Atticus is always first
-colloquial.non.att <- cluster4$Pass[2:length(cluster4$Pass)]
-
-shapiro.test(colloquial.non.att) #p = 0.02205
-hist(colloquial.non.att, main = "Passive verbs") #Note: I will still use norm_tails, because we want p < 0.005
-
-norm_tails(att, colloquial.non.att, "Passive verbs") #p = 0.0065; just barely not significant
-
-#Passive verbs are in the upper end of what's possible, but not impossible with this distribution
-
-##############################
-#Future tense (Fut)
-print("Future tense:")
-att <- cluster4$Fut[1] #Atticus is always first
-colloquial.non.att <- cluster4$Fut[2:length(cluster4$Fut)]
-
-shapiro.test(colloquial.non.att) #Matches a normal distribution closely
-hist(colloquial.non.att)
-
-norm_tails(att, colloquial.non.att, "Future tense") #p = 0.37 in a two-tailed test
-
-#Note: the number of Future tense verbs is well within tolerances!
-
-##############################
-#1st person (X1)
-print("First person")
-
-att <- cluster4$X1[1] #Atticus is always first
-colloquial.non.att <- cluster4$X1[2:length(cluster4$X1)]
-
-shapiro.test(colloquial.non.att) #P = 0.016, almost insignificant, but not quite.
-hist(colloquial.non.att, main = "1st person verbs")
-
-norm_tails(att, colloquial.non.att, "1st person verbs") #p = 0.46 in a two-tailed test
-
-
-#Number of 1st person verbs is well within tolerances
-
-##############################
-#Personal pronouns (Prs)
-print("Personal pronouns:")
-
-att <- cluster4$Prs[1] #Atticus is always first
-colloquial.non.att <- cluster4$Prs[2:length(cluster4$Prs)]
-
-shapiro.test(colloquial.non.att) #P = 0.1624
-hist(colloquial.non.att)
-
-norm_tails(att, colloquial.non.att, "Personal pronouns") #p = 0.28 in a two-tailed test
-
-#Again, Personal pronouns are well within tolerances
-
+map(
+  cluster4,
+  \(x) norm_tails(x[1], x[-1], )
+)
 remove(cluster4)
 
 ```
@@ -714,9 +632,9 @@ center instead of a mean center.
 ```{r echo=TRUE}
 set.seed(126126)
 
-clara.res <- clara(df_scaled, k=k, metric = hc_metric, samples=50, pamLike = TRUE)
+clara.res <- clara(df_clust, k=k, metric = hc_metric, samples=50, pamLike = TRUE)
 
-fviz_cluster(clara.res, data=df_scaled, stand = FALSE, palette = c("red", "green", "blue", "purple", "yellow", "magenta", "gray", "cyan"), 
+fviz_cluster(clara.res, data=df_clust, stand = FALSE, palette = c("red", "green", "blue", "purple", "yellow", "magenta", "gray", "cyan"), 
              geom = geom,
              ellipse.type = ellipse.type,
              ggtheme = ggtheme,
@@ -843,15 +761,11 @@ c("2", "PART", "Imp", "Pres", "Part", "Abl", "Pass", "Fut", "1", "Prs")
 
 kmeans_basic_df$Clusters <- as.factor(kmeans_basic_df$Clusters)
 
-ggplot(kmeans_basic_df, aes(Clusters, X1)) + geom_boxplot()
-
 ggplot(kmeans_basic_df, aes(Clusters, X2)) + geom_boxplot()
 
 ggplot(kmeans_basic_df, aes(Clusters, Prs)) + geom_boxplot()
 
 ggplot(kmeans_basic_df, aes(Clusters, Pres)) + geom_boxplot()
-
-ggplot(kmeans_basic_df, aes(Clusters, PART)) + geom_boxplot()
 
 ggplot(kmeans_basic_df, aes(Clusters, Imp)) + geom_boxplot()
 
@@ -861,68 +775,6 @@ ggplot(kmeans_basic_df, aes(Clusters, Abl)) + geom_boxplot()
 
 ggplot(kmeans_basic_df, aes(Clusters, Pass)) + geom_boxplot()
 
-ggplot(kmeans_basic_df, aes(Clusters, Fut)) + geom_boxplot()
-
-```
-
-## Lemmas
-
-There are 123,779 unique lemmas in the corpus. That's way too many to
-study systematically. What about 1,000 to 5,000?
-
-We want lemmas which are uncommon in all texts but unusually common in
-cluster 4.
-
-First, we need to add cluster labels to data. Use apply?
-kmeans_basic_df\$Clusters[kmeans_basic_df\$title ==
-
-```{r}
-
-kmeans_basic_df$titles <- as.factor(unlist(final.frame$title))
-
-#Just focus on lemmas that are semi-rare; in this case, the 1,000th to 5,000th most common
-lemmas <- sort(table(data$lemma), decreasing = TRUE)[1000:5000] %>% dimnames %>% unlist
-data.lemmas <- data[data$lemma %in% lemmas,]
-
-get_cluster <- function(title) {
-  return(kmeans_basic_df$Clusters[kmeans_basic_df$titles == title])
-}
-
-
-data.clustered$cluster <- lapply(X=data.clustered$title, FUN=get_cluster)
-save(data.clustered, file="clustered-data.csv")
-df = read.csv("out.csv", header=TRUE)
-```
-
-We want to know which lemmas appear more frequently than expected in
-Cluster 4 compared to all other clusters.
-
-1.  Get the mean number of that lemma for each cluster
-
-2.  S
-
-```{r}
-
-#install.packages("mulcomp")
-
-
-set.seed(128128)
-lemmas <- sample(unique(data$lemma), 1000)
-
-data.lemmas <- data.clustered[data.clustered$lemma %in% lemmas,]
-
-tab <- table(data.lemmas$cluster, data.lemmas$lemma)
-
-res_aov <- aov(,
-  data = 
-)
-
-# Dunnett's test:
-post_test <- glht(res_aov,
-  linfct = mcp(species = "Dunnett")
-)
-
-summary(post_test)
 ```
 
 ## Testing
@@ -1012,7 +864,7 @@ get_ac <- function(INDEX) {
 #This function accepts as a parameter the number of variables to sample from the total. It looks at every combination possible with that sample, and picks the top 25 which have the highest ac (see agnes.object in the help pages for more details). To summarize, ac = i - m(i), with i being an observation, and m(i) = d(C1) / d(Cn), with d(C1) being the dissimilarity with the first singleton cluster, and d(Cn) being the dissimilarity with the final, agglomerated cluster. The interpretation of ac is the higher the value, the better the model fit the data into clusters
 lowest_spread <- function(sample_var) {
   combination <- combn(colnames(df_scaled), sample_var, simplify = FALSE)
-  combination <- sample(combination, 300)
+  combination <- sample(combination, 190)
   ac_list <- lapply(X=combination, FUN=get_ac)
   names(ac_list) <- combination
   ac_vec <- unlist(ac_list)
@@ -1177,10 +1029,11 @@ ggsave(filename = "Images/dendrogram_10vars.png", dpi="print")
 
 ```{r}
 
-clusters.aov <- kmeans_basic_df
+cluster.aov <- kmeans_basic_df |> dplyr::select(-title, -titles)
 
 #F-test
 cluster.aov |>
+  dplyr::select(-Clusters) |>
   map(
     \(x) var.test(
       x = x[cluster.aov$Clusters == 1],
@@ -1220,8 +1073,7 @@ cluster.aov |>
 
 #T-test
 #Use map, because I was an idiot not to do that up above
-cluster.aov <- kmeans_basic_df
-kmeans_basic_df |>
+cluster.aov |>
   dplyr::select(-Clusters) |>
   map(
     \(x) t.test(
@@ -1383,11 +1235,9 @@ these situations:
 setwd("~/GitHub/cltk-2025-atticus")
 qa <- read.csv("postag-tests.csv", header = TRUE)
 
-for (i in 4:length(qa[1,])) {
-  qa[,i] <- as.logical(qa[,i])
-}
-
-summary(qa)
+qa |> 
+  dplyr::select(-path, -index, -context) |> 
+  map(\(x) prop.table(table(x)) * 100)
 ```
 
 # Misc Tests
