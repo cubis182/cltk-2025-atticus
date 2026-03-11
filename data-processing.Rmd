@@ -320,15 +320,23 @@ cluster_main <- fviz_cluster(kmeans_basic_cluster,
              ellipse.type = ellipse.type, 
              ggtheme = ggtheme
              ) + 
-  geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 14, size=2, seed = 12927) + 
+  geom_text_repel(
+    aes(label=rownames(df_clust)), 
+    vjust="inward", 
+    hjust="inward", 
+    max.overlaps =    14, 
+    size         =     2, 
+    seed         = 12927) + 
   labs(
-    x = paste(strwrap(paste("Dim1", dim1, "(Left = more 1st/2nd person, imperfective verbs, Right = more Ablative nouns, perfective verbs, and nouns overall)"), 70), collapse = '\n'), 
+    x = paste(strwrap(paste("Dim1", dim1, "(Left = more 1st/2nd person, imperfective verbs, Right = more Ablative nouns, perfective verbs, and nouns overall)"), 70), 
+              collapse = '\n'), 
     y = paste(strwrap(paste("Dim2", dim2, "(Up = more 3rd person and past tense verbs, Down = more nouns)"), 50), collapse='\n'), 
     title = "(1) K-means clustering applied to PHI Latin Texts, k=4") + 
-  theme(axis.title = element_text(size = 12)) + annotate("text", x = -7, y = -0.5, label = "Comedy", fontface = "bold") + 
-  annotate("text", x = -2.5, y = 4, label = "Prose", fontface = "bold") +
-  annotate("text", x = -4, y = -5, label = "Poetry", fontface = "bold") +
-  annotate("text", x = 4, y = -4, label = "History", fontface = "bold")
+  theme(axis.title = element_text(size = 12)) + 
+  annotate("text", x = -7,   y = -0.5, label =  "Comedy", fontface = "bold") + 
+  annotate("text", x = -2.5, y =    4, label =   "Prose", fontface = "bold") +
+  annotate("text", x = -4,   y =   -5, label =  "Poetry", fontface = "bold") +
+  annotate("text", x = 4,    y =   -4, label = "History", fontface = "bold")
 cluster_main
 
 ggsave(filename = "Images/cluster-diagram-kmeans.png", dpi="print")
@@ -342,7 +350,7 @@ cluster_main <- fviz_cluster(kmeans_basic_cluster,
              ) + 
   geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 14, size=2, seed = 12927) + 
   labs(
-    x = paste(strwrap(paste("Dim1", dim1, "(Left = more 1st/2nd person, imperfective verbs, Right = more Ablative nouns, perfective verbs, and nouns overall)"), 70), collapse = '\n'), 
+    x = paste(strwrap(paste("Dim1", dim1, "(Left = more 1st/2nd person, imperfective verbs, Right = more ablative nouns, perfective verbs, and nouns overall)"), 70), collapse = '\n'), 
     y = paste(strwrap(paste("Dim2", dim2, "(Up = more 3rd person and past tense verbs, Down = more nouns)"), 35), collapse='\n'), 
     title = "(1) K-means clustering applied to PHI Latin Texts, k=4") + 
   theme(axis.title = element_text(size = 15)) + annotate("text", x = -7, y = -0.5, label = "Comedy", fontface = "bold") + 
@@ -493,22 +501,22 @@ results aren't identical every time, but Hartigan-Wong, the default
 algorithm, either had the lowest or tied for the lowest total wihin sum
 of squares.
 
-+---------------+---------------+
-| a l g orithm  | t o t . w i   |
-|               | thinss        |
-| \             |               |
-| \<chr\>       | \             |
-|               | \<dbl\>       |
-+:==============+==============:+
-| H a r t i g a | 3 9 88.635    |
-| n-Wong        |               |
-+---------------+---------------+
-| Lloyd         | 3 9 89.989    |
-+---------------+---------------+
-| Forgy         | 3 9 93.158    |
-+---------------+---------------+
-| M a cQueen    | 3 9 89.989    |
-+---------------+---------------+
++--------------+--------------+
+| a l g orithm | t o t . w i  |
+|              | thinss       |
+| \            |              |
+| \<chr\>      | \            |
+|              | \<dbl\>      |
++:=============+=============:+
+| H a r t i g  | 3 9 88.635   |
+| a n-Wong     |              |
++--------------+--------------+
+| Lloyd        | 3 9 89.989   |
++--------------+--------------+
+| Forgy        | 3 9 93.158   |
++--------------+--------------+
+| M a cQueen   | 3 9 89.989   |
++--------------+--------------+
 
 ```{r}
 
@@ -567,7 +575,10 @@ work, lets try the Holm-Sidak correction instead.
 #Start with 2nd person verbs as an example.
 
 
-cluster4 <- kmeans_basic_df[kmeans_basic_df$Clusters == 4,]
+cluster4 <- kmeans_basic_df |>
+  filter(Clusters == 4)
+
+cluster4 <- rbind(kmeans_basic_df[1,], cluster4)
 
 #Let's not used the scaled values, because we're comparing means, and the mean would be 0. 
 att <- cluster4$X2[1] #Atticus is always first
@@ -614,12 +625,30 @@ norm_tails <- function(att, colloquial.non.att, plotname) {
 norm_tails(att, colloquial.non.att, "2nd person verbs")
 
 
-
+#Let's compare the letters to Atticus with Comedy
 map(
   cluster4,
-  \(x) norm_tails(x[1], x[-1], )
+  \(x) norm_tails(x[1], x[-1], "")
 )
-remove(cluster4)
+
+#The result is significant with p < 0.0025 in Present tense, Imperatives, 2nd person, Past and Perfect tense, Finite verbs, Nominative nouns, ablative nouns, adjectives, genitive nouns, prepositions (which are higher in Comedy), passive verbs, and relative pronouns.
+#The result is not significantly different in determiners, participles, accusative nouns, personal pronouns, pronouns, 3rd person verbs, and nouns
+
+#Lets compare the letters to Atticus with its own cluster
+cluster1 <- kmeans_basic_df |>
+  filter(Clusters == 1)
+
+map(
+  cluster1,
+  \(x) norm_tails(x[1], x[-1], "")
+)
+#The result is significant with p < 0.0025 in participles, which are lower than the others, pronouns, which are higher. 
+
+print("2nd person:")
+
+#remove(cluster4)
+
+#Letters to Atticus can't
 
 ```
 
@@ -1029,16 +1058,17 @@ ggsave(filename = "Images/dendrogram_10vars.png", dpi="print")
 
 ```{r}
 
-cluster.aov <- kmeans_basic_df |> dplyr::select(-title, -titles)
+cluster.aov <- kmeans_basic_df 
 
 #F-test
-cluster.aov |>
+f_tests <- cluster.aov |>
   dplyr::select(-Clusters) |>
-  map(
+  map_dfr(
     \(x) var.test(
       x = x[cluster.aov$Clusters == 1],
       y = x[cluster.aov$Clusters == 4],
-      alternative = "two.sided")
+      alternative = "two.sided"),
+      .id = TRUE
   )
 #Only Participles, Passive verbs, and Future tense verbs are significantly different, with a lot more variance in participles in cluster 4
 
@@ -1073,15 +1103,17 @@ cluster.aov |>
 
 #T-test
 #Use map, because I was an idiot not to do that up above
-cluster.aov |>
+t_tests <- cluster.aov |>
   dplyr::select(-Clusters) |>
-  map(
+  map_dfr(
     \(x) t.test(
       x = x[cluster.aov$Clusters == 1],
       y = x[cluster.aov$Clusters == 4],
-      alternative = "two.sided")
+      alternative = "two.sided"),
+      .id = TRUE
   )
-#Means are significantly different in all cases. What about effect size? Can't do that with differently sized samples. 
+
+#Means are significantly different in all cases except in Determiners, Accusative nouns, and Nominative nouns. What about effect size? Can't do that with differently sized samples. 
 
 
 ```
