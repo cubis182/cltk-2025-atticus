@@ -348,7 +348,7 @@ cluster_main <- fviz_cluster(kmeans_basic_cluster,
              ellipse.type = ellipse.type, 
              ggtheme = ggtheme
              ) + 
-  geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 14, size=2, seed = 12927) + 
+  geom_text_repel(aes(label=rownames(df_clust)), vjust="inward", hjust="inward", max.overlaps = 12, size=2, seed = 12927) + 
   labs(
     x = paste(strwrap(paste("Dim1", dim1, "(Left = more 1st/2nd person, imperfective verbs, Right = more ablative nouns, perfective verbs, and nouns overall)"), 70), collapse = '\n'), 
     y = paste(strwrap(paste("Dim2", dim2, "(Up = more 3rd person and past tense verbs, Down = more nouns)"), 35), collapse='\n'), 
@@ -501,22 +501,22 @@ results aren't identical every time, but Hartigan-Wong, the default
 algorithm, either had the lowest or tied for the lowest total wihin sum
 of squares.
 
-+--------------+--------------+
-| a l g orithm | t o t . w i  |
-|              | thinss       |
-| \            |              |
-| \<chr\>      | \            |
-|              | \<dbl\>      |
-+:=============+=============:+
-| H a r t i g  | 3 9 88.635   |
-| a n-Wong     |              |
-+--------------+--------------+
-| Lloyd        | 3 9 89.989   |
-+--------------+--------------+
-| Forgy        | 3 9 93.158   |
-+--------------+--------------+
-| M a cQueen   | 3 9 89.989   |
-+--------------+--------------+
++-------------+-------------+
+| a l g       | t o t . w i |
+| orithm      | thinss      |
+|             |             |
+| \           | \           |
+| \<chr\>     | \<dbl\>     |
++:============+============:+
+| H a r t i g | 3 9 88.635  |
+| a n-Wong    |             |
++-------------+-------------+
+| Lloyd       | 3 9 89.989  |
++-------------+-------------+
+| Forgy       | 3 9 93.158  |
++-------------+-------------+
+| M a cQueen  | 3 9 89.989  |
++-------------+-------------+
 
 ```{r}
 
