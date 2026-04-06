@@ -206,6 +206,10 @@ def has_tail(element) -> bool:
 
 
 def get_text(element) -> str:
+    """
+    This function takes an element and extracts only the plaintext. This is necessary to avoid including text in notes or
+    emendations. This also makes sure that text in the tail of one of those invalid tags gets kept and not completely lost.
+    """
     string = ""
     sTail: str = element.tail
     sText: str = element.text
@@ -579,7 +583,7 @@ def csv_postag(path="", skip_finished=True) -> None:
     # Add this so we can use the GPU
     # NOTE !!! USING THE GPU REQUIRED ME TO INSTALL TORCH THROUGH PIP WITH CUDA 11.8 (SEE INSTALL INSTRUCTIONS ON THEIR WEBSITE FOR MORE)
     custom_pipeline = stanza.Pipeline(
-        "la", processors="tokenize,mwt,pos,lemma", use_gpu=True
+        "la", processors="tokenize,mwt,pos,lemma,depparse", use_gpu=True
     )
     # OLD CLTK: nlp = NLP(backend="stanza", custom_pipeline=custom_pipeline)
 
@@ -772,6 +776,14 @@ def modify_titles():
 
 ##################################################################
 
+
+def get_sections(body: etree._Element) -> dict:
+    """
+    This function returns a dictionary of section numbers and text given a body of a TEI XML file
+    """
+    pass
+
+
 if __name__ == "__main__":
     """
     Note: This module uses Stanza. It comes with Torch, but the default installation didn't allow my computer to use CUDA for processing. I installed Torch again manually with CUDA 11.8 and it worked. See the homepage of Torch for more info
@@ -797,4 +809,7 @@ if __name__ == "__main__":
     # For the purpose of QA, I've also added the function "select_random" which selects a random postagged word, presents it to be checked, and saves whether each field was correct or incorrect.
     # I WOULD NOT recommend using this, just because I was pretty lazy designing it. Anything other than "y" or "Y" is interpreted as the parsing being incorrect, requiring you to modify the CSV manually every time you make a mistake.
 
-    csv_postag(skip_finished=False)
+    csv_postag(
+        path="./../canonical-latinLit/data/phi0428/phi001/phi0428.phi001.perseus-lat1.xml",
+        skip_finished=True,
+    )
