@@ -136,24 +136,6 @@ s_xml_template = """
 </root>
 """
 
-# Retrieve the schema that sets the format for the data we'll parse
-data_schema: etree.XMLSchema = etree.XMLSchema(file="results-schema.xsd")
-# data_schema: etree.XMLSchema = etree.XMLSchema(file="C:/Users/T470s/Documents/GitHub/cltk-2025-atticus/results-schema.xsd")
-
-# NOTE: this template is NEVER to be modified directly. Assign it to a
-# new variable each time.
-parser_xml_template = etree.XMLParser(schema=data_schema)
-
-try:
-    xml_template: etree._Element = etree.fromstring(
-        s_xml_template, parser=parser_xml_template
-    )
-except etree.XMLSyntaxError as invalid_error:
-    print(
-        f"Error! The default XML format doesn't match the schema. Details:\n {invalid_error.args}."
-    )
-
-
 inval_tags = [
     "note",
     "del",
@@ -589,7 +571,7 @@ def csv_postag(path="", skip_finished=True) -> None:
 
     sPathsRemoved = []
 
-    # If we want to keep a line, we place it in the
+    # If we want to keep a line, we place it in the temp file.
     with open(
         results_file, "r", encoding="utf-8", errors="replace", newline=""
     ) as f_read:
@@ -663,6 +645,9 @@ def csv_postag(path="", skip_finished=True) -> None:
             string = re.sub("\t", "", string)
 
             s_final_body = remove_invalid_characters(string)
+
+            # DEBUG
+            save_output(text=s_final_body)
 
             # s_docs.append(s_final_body)
 
