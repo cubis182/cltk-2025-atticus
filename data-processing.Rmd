@@ -56,7 +56,8 @@ dims <- c(
   "Gender",
   "Polarity",
   "Degree",
-  "NumType"
+  "NumType",
+  "Deprel"  #
 )
 
 data <- read.csv("atticus-study-results.csv", na.strings = "", col.names = dims, stringsAsFactors = TRUE)

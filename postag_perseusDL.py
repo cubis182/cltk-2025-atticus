@@ -33,6 +33,9 @@ import io
 import random
 import sys
 
+from dotenv import load_dotenv
+
+
 Y_DENSITY = 4
 EMPTY = 4
 DEBUG_DIR = "C:/Users/T470s/Documents/GitHub/cltk-2025-atticus"
@@ -121,6 +124,10 @@ dir_path = Path(__file__)
 dir_path = dir_path.parents[0]
 sys.path.append(str(dir_path))
 os.chdir(dir_path)
+
+# Get the OLLAMA API key
+load_dotenv("./ollama.env")
+ollama_key = os.getenv("OLLAMA_API_KEY")
 
 # TODO CREATE A TABLE OF CONTENTS FOR ALL THESE NEW FUNCTIONS!!!!
 
@@ -498,7 +505,7 @@ def select_random(tries=1) -> str:
         "Polarity",
         "Degree",
         "NumType",
-        "Deprel"
+        "Deprel",
     ]
     with open(results_file, "r", encoding="utf-8", errors="ignore") as f:
         reader = csv.reader(f)
@@ -616,8 +623,8 @@ def csv_postag(path="", skip_finished=True) -> None:
                 p, parser
             )  # Use path 22 for debugging
 
-            #DEBUG
-            print(f"TEI file: {etree.tostring(tree).decode('utf-8')[1:300]}") 
+            # DEBUG
+            print(f"TEI file: {etree.tostring(tree).decode('utf-8')[1:300]}")
 
             # Get the root of the tree. This variable will eventually hold the tei:body element
             body: etree._Element = tree.getroot()
@@ -638,7 +645,7 @@ def csv_postag(path="", skip_finished=True) -> None:
             )
             debug.write(str(p))"""
 
-            #if len(body):
+            # if len(body):
             #    body = body[0]
 
             # Now we have the <body> element, let's get the text######################3
@@ -734,7 +741,9 @@ def csv_postag(path="", skip_finished=True) -> None:
                             features[x] for x in f_set
                         ]  # This didn't need to be a dictionary, but it helps to know that I will always do this in the same order
 
-                        to_write = to_write + [deprel] #Add the dependency relation to the end
+                        to_write.append(
+                            deprel
+                        )  # Add the dependency relation to the end
 
                         writer.writerow(to_write)
 
@@ -805,6 +814,6 @@ if __name__ == "__main__":
     # I WOULD NOT recommend using this, just because I was pretty lazy designing it. Anything other than "y" or "Y" is interpreted as the parsing being incorrect, requiring you to modify the CSV manually every time you make a mistake.
 
     csv_postag(
-        path="./../canonical-latinLit/data/phi0428/phi001/phi0428.phi001.perseus-lat1.xml",
+        path="./../canonical-latinLit/data/phi0430/phi001/phi0430.phi001.perseus-lat1.xml",
         skip_finished=True,
     )
