@@ -13,6 +13,7 @@ execute code within the notebook, the results appear beneath the code.
 
 ```{r include=TRUE}
 knitr::opts_chunk$set(results = "hold")
+knitr::opts_chunk$set(root.dir = "~GitHub/cltk-2025-atticus")
 ```
 
 # Data Preparation
@@ -57,7 +58,7 @@ dims <- c(
   "Polarity",
   "Degree",
   "NumType",
-  "Deprel"  #
+  "Deprel"  #Not used for the Atticus project
 )
 
 data <- read.csv("atticus-study-results.csv", na.strings = "", col.names = dims, stringsAsFactors = TRUE)
@@ -65,17 +66,10 @@ data <- read.csv("atticus-study-results.csv", na.strings = "", col.names = dims,
 summary(data)
 ```
 
-One thing I want to note is that not every value is relevant. I'll do
-this further below and not here, but I want to go one at a time and see
-whether Degree [c("Abs", "Cmp")], Gender [c("Fem", "Masc", "Neut")], or
-Case (c("Nom", "Acc", "Abl", "Gen", "Dat", "Loc", "Voc", "Abs")) make
-any difference. Some potential issues are also that there are
-redundancies in the variables. If we want to do significance testing, we
-want to know each variable is independent. So, if we get rid of POS
-tags, we should still keep SCONJ, ADP, CCONJ,
-
 ```{r}
 # data <- data[rowSums(data == 'M. Tullius Cicero', na.rm = TRUE) == 0 | data$title %in% c("Letters to Atticus"),]
+
+#Remove all works of Atticus except his letters
 data <- data[rowSums(data == "M. Tullius Cicero", na.rm = TRUE) == 0 | data$title %in% c("Letters to Atticus", "Epistulae ad Familiares", "Letters to and from Brutus", "Letters to and from Quintus"), ] # This version includes Cicero's other letters
 
 # Rename "Imp" to "Imperative" in mood category
@@ -156,20 +150,49 @@ shorten them to 12 characters max.
 # Removed punctuation because PCA showed that it was an "important" variable
 final.frame <- subset(final.frame, select = c(-PUNCT, -X, -VERB, -Sing, -Plur))
 
-# Move Pliny's letters close to the top
-row.one <- final.frame[final.frame$title %in% c("Letters"), ]
-other.rows <- final.frame[final.frame$title %in% c("Letters") == FALSE, ]
-final.frame <- rbind(row.one, other.rows)
-rownames(final.frame) <- 1:length(final.frame$title)
+#Create function for moving a work to a specific spot
+move_row <- function(title, index) {
+  #The index is the row before which to move the work
+  ## @param title: a string with the title of the work. Can be a partial match for the beginning of the string if it isn't ambiguous
+  ## @param index: an integer with the index just after the final destination for the work, i.e. 1 places it in first place just before the previous first work, and, if the data frame is 55 rows long, 56 puts it in last place (NEEDS DEBUGGING FOR THAT CASE)
+  row.one <- final.frame[final.frame$title %in% c(title), ]
+  other.rows <- final.frame[final.frame$title %in% c(title) == FALSE, ]
+  
+  if (index > 1) {
+    
+    if (index > length(other.rows[,1])) { #If the index is greater than the length of the data frame, just put the work at the end
+      return_value <- rbind(other.rows, row.one)
+    }
+    else {
+      #Get the first part from one through the index
+      pre_work_frame <- other.rows[1:index,]
+      
+      #Get the last part, from one after the index to the end
+      post_work_frame <- other.rows[(index + 1):length(other.rows[,1]),]
+      
+      return_value <- rbind(pre_work_frame, row.one, post_work_frame)
+    }
+  }
+  else {
+    return_value <- rbind(row.one, other.rows)
+  }
+  
+  rownames(return_value) <- 1:length(return_value$title)
+  
+  return(return_value)
+}
+
 
 # Move letters to Atticus to the top
-row.one <- final.frame[final.frame$title %in% c("Letters to Atticus"), ]
-other.rows <- final.frame[final.frame$title %in% c("Letters to Atticus") == FALSE, ]
-final.frame <- rbind(row.one, other.rows)
-rownames(final.frame) <- 1:length(final.frame$title) # Replace the rownames with the new correct number
-remove(other.rows)
-remove(row.one)
+final.frame <- move_row(title = "Letters to Atticus", index = 0)
 
+# Move Pliny's letters close to the top
+final.frame <- move_row(title = "Letters", index = 1)
+
+final.frame <- move_row(title = "De bello Gallico", index = 2)
+final.frame <- move_row(title = "Bellum Hispaniense", index = 3)
+final.frame <- move_row(title = "Bellum Alexandrinum", index = 4)
+final.frame <- move_row(title = "Bellum Africum", index = 5)
 
 # Clean up NAs and filter out Cicero's works that are not the Letters to Atticus
 final.frame[is.na(final.frame)] <- 0
@@ -193,9 +216,11 @@ for (i in 1:length(final.frame$title)) {
   final.frame$title[i] <- paste(as.character(i), final.frame$title[i])
 }
 
-rownames(final.frame) <- final.frame$title
+
 final.frame$title <- lapply(X = final.frame$title, FUN = substr, start = 1, stop = 16)
-rownames(final.frame) <- lapply(X = rownames(final.frame), FUN = substr, start = 1, stop = 16)
+rownames(final.frame) <- final.frame$title
+
+
 ```
 
 Now that we have a viable DF, let's cut it up a little bit. We don't
@@ -205,9 +230,8 @@ from every value and dividing it by the standard deviation to make the
 comparable). However, some do expect the data to be scaled, so lets
 create two variables. **df_clust** isn't scaled, and **df_scaled** is.
 
-This is also where I
-
 ```{r df_clust & df_scaled}
+#Get rid of the titles
 df_clust <- final.frame[, 2:length(final.frame)]
 # df_clust <- slice_sample(df_clust, n=45)
 
@@ -239,7 +263,7 @@ rownames(df_scaled) <- rownames(df_scaled)
 cluster_labels <- geom_text_repel(aes(label = rownames(data)), vjust = "inward", hjust = "inward", max.overlaps = 20, size = 3)
 
 # Args for fviz_clust
-palette <- c("#2E9FDF", "#00AFBB", "#E7B800", "red", "gray")
+palette <- c("#2E9FDF", "#00AFBB", "#E7B800", "red", "gray", "black")
 geom <- "point"
 ellipse.type <- "convex"
 ggtheme <- theme_bw()
@@ -359,8 +383,14 @@ ggsave(filename = "Images/cluster-diagram-kmeans-LARGEPRINT.png", dpi = "print")
 
 str(kmeans_basic_cluster)
 
+```
+
+```{r}
 
 distance <- get_dist(df_scaled)
+
+#View(as.matrix(distance))
+
 fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07")) + distance_labels
 ggsave(filename = "Images/Distance plot with main d.f.png", dpi = "print")
 ```
@@ -368,6 +398,84 @@ ggsave(filename = "Images/Distance plot with main d.f.png", dpi = "print")
 The graph above should be the first visualization in the presentation.
 Next, we want to see what sets the Letters and other similar texts apart
 from the others.
+
+Let's do a test where we just look at History with Kmeans clustering
+
+```{r}
+
+
+
+history <- kmeans_basic_df |> rownames_to_column("title") |> filter(Clusters == 1) |> subset(select = -Clusters) |> column_to_rownames("title")
+
+fviz_nbclust(history, kmeans, method = "wss", nstart = 50)
+
+hist_kmeans <- kmeans(history, centers = 6, nstart = 25)
+#kmeans_basic_table <- data.frame(kmeans_basic_cluster$size, #kmeans_basic_cluster$centers)
+#kmeans_basic_df <- data.frame(Clusters = kmeans_basic_cluster$cluster, df_clust)
+```
+
+```{r}
+# Principal component analysis
+
+pca <- prcomp(history)
+
+summary(pca)
+
+
+
+dim1 <- as.character(summary(pca)$importance[2] * 100)
+dim2 <- as.character(summary(pca)$importance[5] * 100)
+
+cluster_main <- fviz_cluster(hist_kmeans,
+  data = history,
+  palette = palette,
+  geom = geom,
+  ellipse.type = ellipse.type,
+  ggtheme = ggtheme
+) +
+  geom_text_repel(
+    aes(label = rownames(history)),
+    vjust = "inward",
+    hjust = "inward",
+    max.overlaps = 12,
+    size = 2,
+    seed = 12927
+  ) +
+  labs(
+    x = paste(strwrap(paste("Dim1", dim1), 70),
+      collapse = "\n"
+    ),
+    y = paste(strwrap(paste("Dim2", dim2), 50), collapse = "\n"),
+    title = "(1) K-means clustering applied to PHI Latin Texts, history. k=4"
+  ) +
+  theme(axis.title = element_text(size = 12))
+
+cluster_main
+
+
+
+
+ggsave(filename = "Images/cluster-diagram-kmeans-history.png", dpi = "print")
+
+```
+
+```{r}
+agnes_results <- hcut(history, stand = FALSE, k = 6, hc_func = hc_func, hc_method = hc_method, hc_metric = hc_metric)
+
+fviz_dend(agnes_results,
+  palette = palette,
+  geom = geom,
+  ellipse.type = ellipse.type,
+  type = "rectangle",
+  rect = TRUE,
+  # horiz=TRUE,
+  ggtheme = theme_bw(),
+  cex = cex
+)
+
+
+ggsave(filename = "Images/history-dendrogram_10vars.png", dpi = "print")
+```
 
 The following graph represents the loadings for the X axis of the
 cluster analysis above. The farther we go to one side, the more 1st/2nd
@@ -509,22 +617,20 @@ results aren't identical every time, but Hartigan-Wong, the default
 algorithm, either had the lowest or tied for the lowest total wihin sum
 of squares.
 
-+---------------------+-------------------+
-| a l g orithm        | t o t . w i       |
-|                     | thinss            |
-| \                   |                   |
-| \<chr\>             | \                 |
-|                     | \<dbl\>           |
-+:====================+==================:+
-| H a r t i g a       | 3 9 88.635        |
-| n-Wong              |                   |
-+---------------------+-------------------+
-| Lloyd               | 3 9 89.989        |
-+---------------------+-------------------+
-| Forgy               | 3 9 93.158        |
-+---------------------+-------------------+
-| M a cQueen          | 3 9 89.989        |
-+---------------------+-------------------+
++----------------------+--------------------+
+| a l g orithm         | t o t . w i thinss |
+|                      |                    |
+| \                    | \                  |
+| \<chr\>              | \<dbl\>            |
++:=====================+===================:+
+| H a r t i g a n-Wong | 3 9 88.635         |
++----------------------+--------------------+
+| Lloyd                | 3 9 89.989         |
++----------------------+--------------------+
+| Forgy                | 3 9 93.158         |
++----------------------+--------------------+
+| M a cQueen           | 3 9 89.989         |
++----------------------+--------------------+
 
 ```{r}
 #
