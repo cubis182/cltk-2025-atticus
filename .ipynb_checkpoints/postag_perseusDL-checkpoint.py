@@ -699,27 +699,7 @@ def csv_postag(path="", skip_finished=True) -> None:
                             "Degree",
                             "NumType",
                         ]
-                        try:
-                            # OLD CLTK: w_features = word.features.features
-                            w_features = feats(
-                                word.feats
-                            )  # added for new stanza backend
-                            for key in f_set:
-                                try:
-                                    # OLD CLTK: features[key] = __proc_feature(
-                                    #    [val.value for val in w_features if val.key == key]
-                                    # )
-                                    if w_features[key]:
-                                        features[key] = w_features[key]
-                                    else:
-                                        features[key] = ""
-                                # The next two lines are superfluous, it seems, as we never get a KeyError, but I'll leave them for now
-                                except KeyError:
-                                    features[key] = ""
-                        # Some words don't have features, so Python will throw an Attribute Error.
-                        except AttributeError:
-                            for key in f_set:
-                                features[key] = ""
+                        feature =
 
                         # Start putting together the line to write
                         metadata = [
