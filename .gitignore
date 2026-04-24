@@ -1,2 +1,5 @@
 *.env
 atticus-study-results-backup.csv
+.idea/inspectionProfiles/
+.idea/modules.xml
+.idea/workspace.xml
