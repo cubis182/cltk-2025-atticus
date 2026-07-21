@@ -44,7 +44,7 @@ library(ggtext)
 <https://github.com/slowkow/ggrepel>)
 
 ```{r Get postagged_only.csv. Big data!}
-setwd("~/GitHub/cltk-2025-atticus")
+#setwd("~/GitHub/cltk-2025-atticus")
 
 dims <- c(
   "title", "author", "path", "form", "lemma", "tag", "Aspect", "Mood", "Number",
